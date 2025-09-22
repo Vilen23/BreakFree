@@ -1,7 +1,15 @@
 
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 export default function NavbarTop() {
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    signOut()
+    navigate('/')
+  }
   return (
     <nav className="bg-[#171717] w-full h-[8vh] px-6 py-4 flex items-center justify-between fixed top-0 left-0 z-50">
       <div>
@@ -35,12 +43,29 @@ export default function NavbarTop() {
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
             </a>
           </li>
-          <li>
-            <Link to="/login" className="relative group">
-              Login
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-          </li>
+          {user ? (
+            <>
+              <li>
+                <Link to="/journal" className="relative group">
+                  Journal
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+              </li>
+              <li>
+                <button onClick={handleLogout} className="relative group">
+                  Logout
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
+                </button>
+              </li>
+            </>
+          ) : (
+            <li>
+              <Link to="/login" className="relative group">
+                Login
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
+              </Link>
+            </li>
+          )}
         </ul>
       </div>
     </nav>

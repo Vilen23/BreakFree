@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
+import { useAuth } from "../context/AuthContext"
 import axios from "axios"
 import { Link } from "react-router-dom"
 
@@ -6,11 +8,19 @@ export const LoginPage = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { signIn } = useAuth()
 
   const handleLogin = async () => {
     try {
         const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { email, password })
-        console.log(response)
+        const token: string = response.data?.access_token
+        if (token) {
+          await signIn(token)
+          const from = (location.state as any)?.from?.pathname || "/journal"
+          navigate(from, { replace: true })
+        }
     } catch (error) {
         console.log(error)
     }

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import authrouter
+from routers import authrouter, journalrouter
 
 app = FastAPI(title="BreakFree API", version="1.0.0")
 
@@ -18,6 +18,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(authrouter.router, prefix="/api")
+app.include_router(journalrouter.router, prefix="/api")
 
 
 @app.get("/")

@@ -19,6 +19,8 @@ db = firestore.client()
 
 # Collection names
 USERS_COLLECTION = "users"
+JOURNALS_COLLECTION = "journals"
+JOURNAL_MESSAGES_COLLECTION = "journal_messages"
 
 
 class FirestoreUser:
@@ -112,3 +114,141 @@ def delete_user(user_id: str) -> bool:
     doc_ref = db.collection(USERS_COLLECTION).document(user_id)
     doc_ref.delete()
     return True
+
+
+class FirestoreJournal:
+    def __init__(
+        self,
+        id: str = None,
+        user_id: str = None,
+        date: str = None,
+        content: str = None,
+        ai_response: str = None,
+        created_at: datetime = None,
+    ):
+        self.id = id or str(uuid.uuid4())
+        self.user_id = user_id
+        self.date = date
+        self.content = content
+        self.ai_response = ai_response
+        self.created_at = created_at or datetime.utcnow()
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "user_id": self.user_id,
+            "date": self.date,
+            "content": self.content,
+            "ai_response": self.ai_response,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, doc_id: str, data: Dict[str, Any]) -> "FirestoreJournal":
+        return cls(
+            id=doc_id,
+            user_id=data.get("user_id"),
+            date=data.get("date"),
+            content=data.get("content"),
+            ai_response=data.get("ai_response"),
+            created_at=data.get("created_at"),
+        )
+
+
+def create_journal(entry: FirestoreJournal) -> FirestoreJournal:
+    doc_ref = db.collection(JOURNALS_COLLECTION).document(entry.id)
+    doc_ref.set(entry.to_dict())
+    return entry
+
+
+def list_journals_by_user(user_id: str) -> list[FirestoreJournal]:
+    query = (
+        db.collection(JOURNALS_COLLECTION)
+        .where("user_id", "==", user_id)
+        .order_by("date", direction=firestore.Query.DESCENDING)
+    )
+    docs = query.stream()
+    return [FirestoreJournal.from_dict(doc.id, doc.to_dict()) for doc in docs]
+
+
+def list_journals_by_user_unordered(user_id: str) -> list[FirestoreJournal]:
+    """List journals by user without ordering to avoid composite index requirement.
+
+    Sorting can be performed on the application side.
+    """
+    query = db.collection(JOURNALS_COLLECTION).where("user_id", "==", user_id)
+    docs = query.stream()
+    return [FirestoreJournal.from_dict(doc.id, doc.to_dict()) for doc in docs]
+
+
+def get_journal_by_date(user_id: str, date: str) -> Optional[FirestoreJournal]:
+    query = (
+        db.collection(JOURNALS_COLLECTION)
+        .where("user_id", "==", user_id)
+        .where("date", "==", date)
+        .limit(1)
+    )
+    docs = list(query.stream())
+    if docs:
+        doc = docs[0]
+        return FirestoreJournal.from_dict(doc.id, doc.to_dict())
+    return None
+
+
+def update_journal(journal_id: str, update_data: Dict[str, Any]) -> bool:
+    db.collection(JOURNALS_COLLECTION).document(journal_id).update(update_data)
+    return True
+
+
+class FirestoreJournalMessage:
+    def __init__(
+        self,
+        id: str = None,
+        user_id: str = None,
+        date: str = None,
+        role: str = None,  # "user" or "assistant"
+        content: str = None,
+        created_at: datetime = None,
+    ):
+        self.id = id or str(uuid.uuid4())
+        self.user_id = user_id
+        self.date = date
+        self.role = role
+        self.content = content
+        self.created_at = created_at or datetime.utcnow()
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "user_id": self.user_id,
+            "date": self.date,
+            "role": self.role,
+            "content": self.content,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, doc_id: str, data: Dict[str, Any]) -> "FirestoreJournalMessage":
+        return cls(
+            id=doc_id,
+            user_id=data.get("user_id"),
+            date=data.get("date"),
+            role=data.get("role"),
+            content=data.get("content"),
+            created_at=data.get("created_at"),
+        )
+
+
+def add_journal_message(message: FirestoreJournalMessage) -> FirestoreJournalMessage:
+    doc_ref = db.collection(JOURNAL_MESSAGES_COLLECTION).document(message.id)
+    doc_ref.set(message.to_dict())
+    return message
+
+
+def list_journal_messages(user_id: str, date: str) -> list[FirestoreJournalMessage]:
+    query = (
+        db.collection(JOURNAL_MESSAGES_COLLECTION)
+        .where("user_id", "==", user_id)
+        .where("date", "==", date)
+        .order_by("created_at", direction=firestore.Query.ASCENDING)
+    )
+    docs = query.stream()
+    return [FirestoreJournalMessage.from_dict(doc.id, doc.to_dict()) for doc in docs]

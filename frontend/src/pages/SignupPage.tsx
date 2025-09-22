@@ -165,38 +165,29 @@ export default function SignupPage() {
             {/* Workspace 1 */}
             <div className="flex gap-4">
               <div className="h-[206px] w-[250px] rounded-2xl overflow-hidden shadow-lg">
-                <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                    <div className="w-16 h-12 bg-blue-500 rounded mb-2"></div>
-                    <div className="text-white text-sm">Design Studio</div>
-                  </div>
-                </div>
+              <img
+                  src="/Login1.jpeg"
+                  alt="login1"
+                  className="w-full h-full object-cover"
+                />
               </div>
-
               {/* Workspace 2 */}
               <div className="h-[206px] w-[250px] rounded-2xl overflow-hidden shadow-lg">
-                <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
-                  <div className="bg-white rounded-lg shadow-md p-4 border">
-                    <div className="w-16 h-12 bg-emerald-500 rounded mb-2"></div>
-                    <div className="text-gray-800 text-sm">Dev Environment</div>
-                  </div>
-                </div>
+              <img
+                  src="/Login2.jpeg"
+                  alt="login2"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
 
             {/* Workspace 3 */}
-            <div className="h-[156px] w-[520px] rounded-2xl overflow-hidden shadow-lg">
-              <div className="w-full h-full bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center">
-                <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 border border-white/30">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-12 bg-purple-500 rounded"></div>
-                    <div>
-                      <div className="text-gray-800 text-sm font-medium">Creative Workspace</div>
-                      <div className="text-gray-600 text-xs">Team Collaboration</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="h-[186px] w-[520px] rounded-2xl overflow-hidden shadow-lg">
+            <img
+              src="/Login3.jpeg"
+              alt="login3"
+              className="w-[520px] h-full object-cover"
+            />
             </div>
           </div>
         </div>
