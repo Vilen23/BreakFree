@@ -1,11 +1,20 @@
 import './App.css'
 import HomePage from './pages/HomePage'
+import { Routes, Route } from 'react-router-dom'
+import LoginPage from './pages/LoginPage'
+import NavbarTop from './components/NavbarTop'
+import SignupPage from './pages/SignupPage'
 
 function App() {
 
   return (
     <>
-      <HomePage />
+      <NavbarTop />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+      </Routes>
     </>
   )
 }

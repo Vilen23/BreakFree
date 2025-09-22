@@ -1,4 +1,3 @@
-import NavbarTop from '../components/NavbarTop'
 import { HeroSection } from '../components/Hero'
 import { AboutSection } from '../components/About'
 import { OurServicesSection } from '../components/Services'
@@ -7,8 +6,7 @@ import { BreakFreeFooter } from '../components/Footer'
 
 export default function HomePage() {
   return (
-    <div>
-      <NavbarTop />
+    <div className="pt-[8vh]">
       <HeroSection/>
       <AboutSection/> 
       <OurServicesSection/>
