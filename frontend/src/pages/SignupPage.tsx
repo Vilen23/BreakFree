@@ -1,5 +1,6 @@
 import axios from "axios"
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 export default function SignupPage() {
   const [firstname, setFirstName] = useState("")
@@ -8,13 +9,13 @@ export default function SignupPage() {
   const [gender, setGender] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-
+  const navigate = useNavigate()
   const handleSignup = async () => {
     try {
         const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/signup`, { firstname, lastname, email, gender, password })
         console.log("Signup data:", { firstname, lastname, email, gender, password })
-        console.log(response)
-        // alert("Account created successfully!")   
+        console.log(response)  
+        navigate("/login")
     } catch (error) {
         console.log(error)
     }
