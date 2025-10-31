@@ -6,3 +6,17 @@
     font-weight: 400;
   }
 }
+
+/* Glassmorphism effect */
+.glass {
+  @apply backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10;
+}
+
+/* Smooth gradient background */
+.gradient-bg {
+  background: linear-gradient(135deg, oklch(0.98 0.001 280) 0%, oklch(0.95 0.01 300) 100%);
+}
+
+.dark .gradient-bg {
+  background: linear-gradient(135deg, oklch(0.12 0.02 280) 0%, oklch(0.15 0.03 300) 100%);
+}

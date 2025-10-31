@@ -28,8 +28,17 @@ async def create_journal_entry(
             status_code=400, detail="Journal for this date already exists"
         )
 
-    # Generate AI response via Gemini (with fallback inside utility)
-    ai_response = summarize_journal_to_supportive_reply(payload.content)
+    # Generate AI response via Gemini including user onboarding context
+    onboarding = database.get_latest_onboarding_by_user(current_user.id)
+    onboarding_payload = None
+    if onboarding:
+        onboarding_payload = {
+            "addiction": onboarding.addiction,
+            "answers": onboarding.answers,
+        }
+    ai_response = summarize_journal_to_supportive_reply(
+        payload.content, onboarding_payload
+    )
 
     entry = database.FirestoreJournal(
         user_id=current_user.id,
@@ -90,6 +99,7 @@ async def add_message(
     payload: models.JournalMessageCreate,
     current_user: database.FirestoreUser = Depends(auth.get_current_active_user),
 ):
+    print(payload, "payload")
     # Save user message
     user_msg = database.FirestoreJournalMessage(
         user_id=current_user.id,
@@ -112,7 +122,22 @@ async def add_message(
 
     # Optionally generate AI response and save
     if payload.generate_ai:
-        ai_text = summarize_journal_to_supportive_reply(payload.content)
+        onboarding = database.get_latest_onboarding_by_user(current_user.id)
+        onboarding_payload = None
+        if onboarding:
+            onboarding_payload = {
+                "addiction": onboarding.addiction,
+                "answers": onboarding.answers,
+            }
+        ai_text = summarize_journal_to_supportive_reply(
+            payload.content, onboarding_payload
+        )
+        # Ensure content is a valid string to satisfy Pydantic validation
+        if not isinstance(ai_text, str) or not ai_text.strip():
+            ai_text = (
+                "I'm here with you. I couldn't generate a reply right now, but you can "
+                "continue journaling and I'll respond soon."
+            )
         ai_msg = database.FirestoreJournalMessage(
             user_id=current_user.id,
             date=payload.date,
@@ -140,13 +165,17 @@ async def get_messages(
     current_user: database.FirestoreUser = Depends(auth.get_current_active_user),
 ):
     msgs = database.list_journal_messages(current_user.id, date)
+    # print(msgs)
+    # print("skjaskjlfkalhjsfkhjla")
     return [
         models.JournalMessage(
             id=m.id,
             user_id=m.user_id,
             date=m.date,
             role=m.role,
-            content=m.content,
+            content=(
+                m.content if isinstance(m.content, str) and m.content.strip() else ""
+            ),
             created_at=m.created_at,
         )
         for m in msgs

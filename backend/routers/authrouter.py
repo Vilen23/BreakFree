@@ -33,6 +33,7 @@ async def signup(user: models.UserCreate):
         lastname=created_user.lastname,
         gender=created_user.gender,
         is_active=created_user.is_active,
+        information_stores=created_user.information_stores,
         created_at=created_user.created_at,
     )
 
@@ -40,7 +41,7 @@ async def signup(user: models.UserCreate):
 @router.post("/login", response_model=models.Token)
 async def login(login_data: models.UserLogin):
     """Login user and return access token"""
-    print(login_data)
+    # print(login_data)
     user = auth.authenticate_user(login_data.email, login_data.password)
     if not user:
         raise HTTPException(
@@ -52,7 +53,7 @@ async def login(login_data: models.UserLogin):
     access_token = auth.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "information_stores": user.information_stores}
 
 
 @router.get("/me", response_model=models.User)
@@ -67,6 +68,7 @@ async def get_current_user_info(
         lastname=current_user.lastname,
         gender=current_user.gender,
         is_active=current_user.is_active,
+        information_stores=current_user.information_stores,
         created_at=current_user.created_at,
     )
 
@@ -88,5 +90,6 @@ async def get_user_by_id(
         lastname=user.lastname,
         gender=user.gender,
         is_active=user.is_active,
+        information_stores=user.information_stores,
         created_at=user.created_at,
     )

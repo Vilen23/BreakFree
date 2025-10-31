@@ -26,7 +26,7 @@ export default function JournalSideBar({ onSelectDate, selectedDate }: Props) {
   }, []);
 
   return (
-    <div className='w-1/8 h-[92vh] bg-gray-100 shadow-2xl flex flex-col items-center gap-4 pt-4 overflow-y-auto'>
+    <div className='w-64 h-[92vh] sticky top-[8vh] self-start bg-gray-100 shadow-2xl flex flex-col items-center gap-4 pt-4 overflow-y-auto'>
       <button className="bg-blue-500 text-white rounded-full px-4 py-2 ">
         Create New Entry
       </button>

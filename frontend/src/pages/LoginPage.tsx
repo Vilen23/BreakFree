@@ -1,10 +1,12 @@
 import { useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import api from "../lib/api"
 import axios from "axios"
 import { Link } from "react-router-dom"
 
 export const LoginPage = () => {
+  const [error, setError] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -18,11 +20,14 @@ export const LoginPage = () => {
         const token: string = response.data?.access_token
         if (token) {
           await signIn(token)
-          const from = (location.state as any)?.from?.pathname || "/journal"
+          // Fetch user to decide redirect based on information_stores
+          const { data } = await api.get(`/auth/me`)
+          const target = data?.information_stores ? "/journal" : "/onboarding"
+          const from = (location.state as any)?.from?.pathname || target
           navigate(from, { replace: true })
         }
     } catch (error) {
-        console.log(error)
+      setError("Invalid email or password")
     }
   }
 
@@ -83,6 +88,8 @@ export const LoginPage = () => {
                 </div>
               </div>
 
+              {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+              
               <button
                 onClick={handleLogin}
                 type="button"

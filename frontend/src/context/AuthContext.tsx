@@ -8,6 +8,7 @@ type AuthUser = {
   lastname: string;
   gender: string;
   is_active: boolean;
+  information_stores: boolean;
   created_at: string;
 };
 

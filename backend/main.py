@@ -1,6 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import authrouter, journalrouter
+from routers import authrouter, journalrouter, onboardingrouter, tasksrouter
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load environment variables from backend/.env explicitly
+_env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=_env_path)
 
 app = FastAPI(title="BreakFree API", version="1.0.0")
 
@@ -19,6 +25,8 @@ app.add_middleware(
 # Include routers
 app.include_router(authrouter.router, prefix="/api")
 app.include_router(journalrouter.router, prefix="/api")
+app.include_router(onboardingrouter.router, prefix="/api")
+app.include_router(tasksrouter.router, prefix="/api")
 
 
 @app.get("/")

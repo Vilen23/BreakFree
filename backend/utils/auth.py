@@ -40,6 +40,7 @@ def authenticate_user(email: str, password: str):
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
+        print("Password is Incorrect")
         return False
     return user
 

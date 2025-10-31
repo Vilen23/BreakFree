@@ -31,10 +31,23 @@ export default function JournalingPage() {
       const mm = String(now.getMonth() + 1).padStart(2, '0');
       const dd = String(now.getDate()).padStart(2, '0');
       const date = `${yyyy}-${mm}-${dd}`;
-      const { data } = await api.post('/journal', { date, content: text });
-      setAiReply(data.ai_response ?? null);
       setSelectedDate(date);
+      // If journal exists, add message; else create journal first
+      try {
+        await api.get(`/journal/${date}`);
+        await api.post('/journal/message', { date, content: text, generate_ai: true });
+      } catch (err: any) {
+        const status = err?.response?.status;
+        if (status === 404) {
+          const { data } = await api.post('/journal', { date, content: text });
+          setAiReply(data.ai_response ?? null);
+          await api.post('/journal/message', { date, content: text, generate_ai: true });
+        } else {
+          throw err;
+        }
+      }
       await loadMessages(date);
+      setText('');
     } catch (e) {
       console.error(e);
     } finally {
@@ -72,9 +85,9 @@ export default function JournalingPage() {
   };
 
   return (
-    <div className="h-[92vh] mt-[8vh] bg-gray-50 flex">
+    <div className="h-[92vh] mt-[8vh] bg-gray-50 flex items-start">
       <JournalSideBar onSelectDate={handleSelectDate} selectedDate={selectedDate} />
-      <div className='w-full flex justify-center items-center '>
+      <div className='flex-1 h-[92vh] overflow-y-auto flex justify-center items-start py-6'>
       <div className="w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
@@ -140,13 +153,15 @@ export default function JournalingPage() {
                 {!loadingMessages && messages.length === 0 && (
                   <div className="text-sm text-gray-500">No messages yet for this date.</div>
                 )}
-                <ul className="space-y-3">
-                  {messages.map((m) => (
-                    <li key={m.id} className={m.role === 'assistant' ? 'text-blue-700' : 'text-gray-800'}>
-                      <span className="font-medium capitalize">{m.role}:</span> {m.content}
-                    </li>
-                  ))}
-                </ul>
+                <div className="max-h-80 overflow-y-auto pr-2">
+                  <ul className="space-y-3">
+                    {messages.map((m) => (
+                      <li key={m.id} className={m.role === 'assistant' ? 'text-blue-700' : 'text-gray-800'}>
+                        <span className="font-medium capitalize">{m.role}:</span> {m.content}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
