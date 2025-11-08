@@ -103,7 +103,10 @@ class DailyTaskItem(BaseModel):
     title: str
     description: str
     time: str
-    completed: bool = False
+    completed: bool
+    video_url: Optional[str] = None  # NEW — AI generated or cached video
+    exercise_type: Optional[str] = None  # e.g., "stretch", "breathing", etc.
+    difficulty: Optional[str] = None  # e.g., "easy", "medium", "hard"
 
 
 class DailyTasksPlan(BaseModel):
@@ -115,3 +118,8 @@ class DailyTasksPlan(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PoseCompareRequest(BaseModel):
+    task_id: str
+    user_pose_sequence: list
