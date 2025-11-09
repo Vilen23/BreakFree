@@ -12,6 +12,7 @@ type PosePoint = {
 
 type PoseTrackerProps = {
   taskId: string
+  taskName: string
   backendUrl?: string
   captureFps?: number
   showHints?: boolean
@@ -20,6 +21,7 @@ type PoseTrackerProps = {
 
 export default function PoseTracker({
   taskId,
+  taskName = "Push Down",
   backendUrl = "http://localhost:8000/api/pose/compare",
   captureFps = 10,
   showHints = true,
@@ -346,47 +348,97 @@ export default function PoseTracker({
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-50 pt-24 pb-16 px-4">
-      {/* 🧠 Header */}
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">
-        Exercise Tracker <span className="text-green-600">– BreakFree AI</span>
-      </h1>
-
-      {/* 🎥 Videos Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
-        {/* Reference Video */}
-        {referenceVideoUrl && (
-          <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden group">
-            <video
-              ref={refVideoRef} // 👈 ADD THIS REF
-              src={referenceVideoUrl}
-              width={480}
-              height={360}
-              muted // 👈 REQUIRED for autoplay
-              className="w-full h-auto object-cover rounded-2xl"
-              playsInline
-              loop
-              id="referenceVideo"
-            />
-            <canvas
-              ref={refCanvasRef}
-              width={480}
-              height={360}
-              className="absolute top-0 left-0 w-full h-full pointer-events-none"
-            />
-            <div className="absolute bottom-3 left-3 text-white bg-black/60 px-3 py-1 rounded-lg text-sm font-semibold tracking-wide">
-              Reference
+    <div className="min-h-screen flex flex-col items-center bg-gray-50 pt-24 pb-16 px-6">
+  
+      {/* 🏋️ Header */}
+      <div className="w-full max-w-7xl mb-8">
+        <h1 className="text-4xl font-bold text-gray-800 mb-2">{taskId.replace("-", " ")}</h1>
+        <p className="text-gray-600">
+          {taskName}
+        </p>
+      </div>
+  
+      {/* 💪 Main Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 w-full max-w-[1350px]">
+  
+        {/* LEFT: Reference, Instructions */}
+        <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col justify-between">
+          
+          {/* 🎥 Reference Video */}
+          {referenceVideoUrl && (
+            <div className="relative rounded-xl overflow-hidden  flex items-center justify-center h-[320px] mb-6 shadow-md">
+              <video
+                ref={refVideoRef}
+                id="referenceVideo"
+                src={referenceVideoUrl}
+                width={480}
+                height={360}
+                muted
+                playsInline
+                loop
+                controls
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <canvas
+                ref={refCanvasRef}
+                width={480}
+                height={360}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+              />
+            </div>
+          )}
+  
+          {/* 📘 Tabs */}
+          <div>
+            <div className="flex border-b border-gray-200 mb-4">
+              <button className="px-4 py-2 border-b-2 border-black text-sm font-semibold">
+                Instructions
+              </button>
+              <button className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">
+                Tips & Safety
+              </button>
+            </div>
+  
+            {/* Steps */}
+            <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+              <div>
+                <h3 className="font-semibold">Step 1: Setup</h3>
+                <p className="text-gray-600 text-sm">
+                  Get on your hands and knees on a yoga mat or padded surface. Position your hands slightly wider than shoulder-width apart.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Step 2: Body Position</h3>
+                <p className="text-gray-600 text-sm">
+                  Extend your legs so your body forms a straight line from head to heels. Keep your core engaged and your gaze slightly forward.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Step 3: Lower Down</h3>
+                <p className="text-gray-600 text-sm">
+                  Lower your body by bending your elbows until your chest nearly touches the floor, then push back up.
+                </p>
+              </div>
             </div>
           </div>
-        )}
-
-        {/* User Video */}
-        <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden group">
+  
+          {/* Label */}
+          <div className="mt-6">
+            <span className="inline-block bg-black text-white text-xs px-3 py-1 rounded-full">
+              Reference
+            </span>
+          </div>
+        </div>
+  
+        {/* RIGHT: Live Camera Feed */}
+        <div className="relative bg-black rounded-2xl shadow-lg flex flex-col items-center justify-center overflow-hidden h-[500px]">
+  
+          {/* Video */}
           <video
             ref={videoRef}
             width={480}
             height={360}
-            className="w-full h-auto object-cover bg-black rounded-2xl"
+            className="w-full h-full object-cover opacity-90"
             playsInline
             muted
           />
@@ -396,9 +448,9 @@ export default function PoseTracker({
             height={360}
             className="absolute top-0 left-0 w-full h-full pointer-events-none"
           />
-
-          {/* Recording HUD */}
-          <div className="absolute top-3 left-3 text-white text-sm font-semibold bg-black/60 px-3 py-1 rounded-lg">
+  
+          {/* Status HUD */}
+          <div className="absolute top-4 left-4 text-white text-sm font-semibold bg-black/60 px-3 py-1 rounded-lg">
             {isRecording ? (
               <span className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
@@ -410,59 +462,74 @@ export default function PoseTracker({
               "Initializing..."
             )}
           </div>
-
-          <div className="absolute bottom-3 left-3 text-white bg-black/60 px-3 py-1 rounded-lg text-sm font-semibold tracking-wide">
+  
+          {/* Overlay for camera off */}
+          {!initialized && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-12 w-12 mb-3 opacity-60"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53L15.75 13.5M4.5 6.75h7.5a2.25 2.25 0 012.25 2.25v6a2.25 2.25 0 01-2.25 2.25H4.5A2.25 2.25 0 012.25 15V9a2.25 2.25 0 012.25-2.25z"
+                />
+              </svg>
+              <p className="text-lg font-medium">Camera Off</p>
+              <p className="text-sm opacity-70">Click "Start Exercise" to begin</p>
+            </div>
+          )}
+  
+          {/* You Label */}
+          <div className="absolute bottom-4 left-4 text-white bg-black/60 px-3 py-1 rounded-lg text-sm font-semibold">
             You
           </div>
-
-          <div className="absolute inset-0 border-2 border-transparent group-hover:border-green-400 rounded-2xl transition-all duration-300" />
+  
+          {/* Controls */}
+          <div className="absolute bottom-6 right-6 flex gap-4">
+            <button
+              onClick={startRecording}
+              disabled={!initialized || isRecording}
+              className={`px-6 py-3 rounded-xl font-semibold shadow-md transition-all duration-200
+                ${initialized && !isRecording
+                  ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:scale-105 hover:shadow-lg text-white"
+                  : "bg-gray-600 cursor-not-allowed text-gray-300"}`}
+            >
+              ▶ Start Exercise
+            </button>
+  
+            <button
+              onClick={stopRecording}
+              disabled={!isRecording}
+              className={`px-6 py-3 rounded-xl font-semibold shadow-md transition-all duration-200
+                ${isRecording
+                  ? "bg-gradient-to-r from-red-500 to-rose-600 hover:scale-105 hover:shadow-lg text-white"
+                  : "bg-gray-600 cursor-not-allowed text-gray-300"}`}
+            >
+              ⏹ Stop
+            </button>
+          </div>
+  
+          {/* Score + Tips */}
+          <div className="absolute bottom-6 left-6">
+            {score !== null && !error && (
+              <div className="text-lg font-semibold text-white">
+                Score: <span className="text-green-400">{(score * 100).toFixed(0)}%</span>
+              </div>
+            )}
+            {error && <div className="text-orange-400 text-sm mt-1">⚠ {error}</div>}
+            <p className="text-gray-400 text-xs mt-2">
+              💡 Keep your shoulders & hands visible. If the camera is close, try increasing captureFps for smoother tracking.
+            </p>
+          </div>
         </div>
       </div>
-
-      {/* 🎮 Control Buttons */}
-      <div className="flex gap-4 mt-8">
-        <button
-          onClick={startRecording}
-          disabled={!initialized || isRecording}
-          className={`px-6 py-3 rounded-xl font-semibold shadow-md transition-all duration-200 
-            ${
-              initialized && !isRecording
-                ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:scale-105 hover:shadow-lg text-white"
-                : "bg-gray-300 cursor-not-allowed text-gray-500"
-            }`}
-        >
-          ▶ Start Exercise
-        </button>
-
-        <button
-          onClick={stopRecording}
-          disabled={!isRecording}
-          className={`px-6 py-3 rounded-xl font-semibold shadow-md transition-all duration-200 
-            ${
-              isRecording
-                ? "bg-gradient-to-r from-red-500 to-rose-600 hover:scale-105 hover:shadow-lg text-white"
-                : "bg-gray-300 cursor-not-allowed text-gray-500"
-            }`}
-        >
-          ⏹ Stop
-        </button>
-      </div>
-
-      {/* 📈 Result + Info */}
-      <div className="mt-6 text-center">
-        {error && <div className="text-orange-500 font-medium">⚠ {error}</div>}
-        {score !== null && !error && (
-          <div className="text-xl font-semibold text-gray-800 mt-2">
-            Score:{" "}
-            <span className="text-green-600">{(score * 100).toFixed(0)}%</span>
-          </div>
-        )}
-      </div>
-
-      <p className="mt-6 text-gray-500 text-sm max-w-lg text-center leading-relaxed">
-        Tip: Keep your shoulders & hands visible. If the camera is close, try
-        increasing <code>captureFps</code> for smoother tracking.
-      </p>
     </div>
-  )
+  );
+  
 }
