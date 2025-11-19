@@ -23,7 +23,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/onboarding" element={<OnboardingFlow />} />
-          <Route path="/pose-tracker" element={<PoseTracker taskId="1" backendUrl="http://localhost:8000/api/pose/compare" captureFps={10} showHints={true} />} />
+          <Route path="/pose-tracker" element={<PoseTracker taskName='push-ups' taskId="1" backendUrl="http://localhost:8000/api/pose/compare" captureFps={10} showHints={true} />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/post-onboarding" element={<PostOnboarding />} />
             <Route path="/journal" element={<JournalingPage />} />

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react"
+import  { useEffect, useRef, useState } from "react"
 import * as tf from "@tensorflow/tfjs"
 import * as posedetection from "@tensorflow-models/pose-detection"
 import "@tensorflow/tfjs-backend-webgl"
@@ -46,7 +46,7 @@ export default function PoseTracker({
   const [recordStartTs, setRecordStartTs] = useState<number | null>(null)
   const [score, setScore] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
-
+  console.log(score,error)
   const refVideoRef = useRef<HTMLVideoElement | null>(null)
 
   // Upper-body joints to capture (MoveNet names)

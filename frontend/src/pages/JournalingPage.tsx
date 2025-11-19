@@ -12,7 +12,7 @@ export default function JournalingPage() {
   const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
   const [conversationUnlocked, setConversationUnlocked] = useState<boolean>(false);
   const [journalEntry, setJournalEntry] = useState<{ conversation_unlocked: boolean; ai_response: string | null; content: string } | null>(null);
-
+  console.log(lastSaved)
   // Auto-save functionality
   useEffect(() => {
     if (text.trim()) {
@@ -138,15 +138,6 @@ export default function JournalingPage() {
     }
   };
 
-  const formatTimeAgo = (date: Date) => {
-    if (!date) return '';
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - date.getTime()) / 1000 / 60); // minutes
-    
-    if (diff < 1) return 'Auto-saved just now';
-    if (diff === 1) return 'Auto-saved 1 minute ago';
-    return `Auto-saved ${diff} minutes ago`;
-  };
 
   return (
     <div className="h-[92vh] mt-[8vh] bg-gray-50 flex items-start overflow-y-hidden">

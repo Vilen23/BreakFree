@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import {
   Check,
-  Video,
   Sun,
   Moon,
   Clock,
@@ -24,7 +23,7 @@ export default function DailyWellnessPlanner() {
   const [taskList, setTaskList] = useState<DailyTaskItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [dayCompleted, setDayCompleted] = useState<boolean>(false);
-
+  console.log(dayCompleted)
   // monitor modal
   const [selectedTask, setSelectedTask] = useState<DailyTaskItem | null>(null);
   const [isMonitorModalOpen, setIsMonitorModalOpen] = useState<boolean>(false);
