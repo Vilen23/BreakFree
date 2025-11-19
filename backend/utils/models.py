@@ -50,6 +50,7 @@ class JournalEntry(BaseModel):
     content: str
     ai_response: Optional[str] = None
     created_at: datetime
+    conversation_unlocked: bool = False
 
     class Config:
         from_attributes = True
@@ -107,6 +108,7 @@ class DailyTaskItem(BaseModel):
     video_url: Optional[str] = None  # NEW — AI generated or cached video
     exercise_type: Optional[str] = None  # e.g., "stretch", "breathing", etc.
     difficulty: Optional[str] = None  # e.g., "easy", "medium", "hard"
+    image: Optional[str] = None  # NEW — AI generated image URL
 
 
 class DailyTasksPlan(BaseModel):

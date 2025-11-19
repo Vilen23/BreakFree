@@ -131,6 +131,7 @@ class FirestoreJournal:
         content: str = None,
         ai_response: str = None,
         created_at: datetime = None,
+        conversation_unlocked: bool = False,
     ):
         self.id = id or str(uuid.uuid4())
         self.user_id = user_id
@@ -138,6 +139,7 @@ class FirestoreJournal:
         self.content = content
         self.ai_response = ai_response
         self.created_at = created_at or datetime.utcnow()
+        self.conversation_unlocked = conversation_unlocked
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -146,6 +148,7 @@ class FirestoreJournal:
             "content": self.content,
             "ai_response": self.ai_response,
             "created_at": self.created_at,
+            "conversation_unlocked": self.conversation_unlocked,
         }
 
     @classmethod
@@ -157,6 +160,7 @@ class FirestoreJournal:
             content=data.get("content"),
             ai_response=data.get("ai_response"),
             created_at=data.get("created_at"),
+            conversation_unlocked=data.get("conversation_unlocked", False),
         )
 
 

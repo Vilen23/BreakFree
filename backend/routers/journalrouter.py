@@ -55,6 +55,7 @@ async def create_journal_entry(
         content=created.content,
         ai_response=created.ai_response,
         created_at=created.created_at,
+        conversation_unlocked=created.conversation_unlocked,
     )
 
 
@@ -71,6 +72,7 @@ async def list_my_journals(
             content=i.content,
             ai_response=i.ai_response,
             created_at=i.created_at,
+            conversation_unlocked=i.conversation_unlocked,
         )
         for i in items
     ]
@@ -91,6 +93,7 @@ async def get_journal_by_date(
         content=entry.content,
         ai_response=entry.ai_response,
         created_at=entry.created_at,
+        conversation_unlocked=entry.conversation_unlocked,
     )
 
 
@@ -180,3 +183,28 @@ async def get_messages(
         )
         for m in msgs
     ]
+
+
+@router.put("/{date}/unlock-conversation", response_model=models.JournalEntry)
+async def unlock_conversation(
+    date: str,
+    current_user: database.FirestoreUser = Depends(auth.get_current_active_user),
+):
+    entry = database.get_journal_by_date(current_user.id, date)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Journal not found")
+
+    # Update conversation_unlocked to True
+    database.update_journal(entry.id, {"conversation_unlocked": True})
+
+    # Fetch updated entry
+    updated_entry = database.get_journal_by_date(current_user.id, date)
+    return models.JournalEntry(
+        id=updated_entry.id,
+        user_id=updated_entry.user_id,
+        date=updated_entry.date,
+        content=updated_entry.content,
+        ai_response=updated_entry.ai_response,
+        created_at=updated_entry.created_at,
+        conversation_unlocked=updated_entry.conversation_unlocked,
+    )

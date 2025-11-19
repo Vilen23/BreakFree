@@ -515,7 +515,7 @@ export default function PoseTracker({
             </button>
           </div>
   
-          {/* Score + Tips */}
+          {/* Score + Tips
           <div className="absolute bottom-6 left-6">
             {score !== null && !error && (
               <div className="text-lg font-semibold text-white">
@@ -526,7 +526,7 @@ export default function PoseTracker({
             <p className="text-gray-400 text-xs mt-2">
               💡 Keep your shoulders & hands visible. If the camera is close, try increasing captureFps for smoother tracking.
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

@@ -40,6 +40,10 @@ export type DailyTaskItem = {
   description: string;
   time: string;
   completed: boolean;
+  video_url?: string | null;
+  exercise_type?: string | null;
+  difficulty?: string | null;
+  image?: string | null;
 };
 
 export type DailyTasksPlan = {

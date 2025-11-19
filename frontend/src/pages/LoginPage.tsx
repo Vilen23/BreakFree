@@ -32,7 +32,7 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex-col max-w-7xl mx-auto bg-gray-50 flex justify-center pt-[8vh]">
+    <div className="min-h-screen flex-col max-w-7xl mx-auto  flex justify-center pt-[8vh]">
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
@@ -93,7 +93,7 @@ export const LoginPage = () => {
               <button
                 onClick={handleLogin}
                 type="button"
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium"
+                className="w-full cursor-pointer bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium"
               >
                 Login
               </button>

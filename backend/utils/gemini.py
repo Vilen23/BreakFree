@@ -2,7 +2,7 @@ import os
 import json
 import requests
 import random
-from utils import firebase_utils 
+from utils import firebase_utils
 from utils.PoseTracker.extract_pose_from_video import extract_pose_from_video
 from typing import Optional, Any, Dict, List
 
@@ -248,7 +248,7 @@ def summarize_journal_to_supportive_reply(
 
 
 def generate_daily_tasks(onboarding: Optional[Any] = None) -> List[Dict[str, Any]]:
-    """Generate 5 daily wellness tasks (1–2 easy 8s exercise demos)."""
+    """Generate 5 daily wellness tasks: 2 physical exercises + 3 normal tasks."""
 
     api_key = _get_api_key()
     if not api_key:
@@ -258,80 +258,276 @@ def generate_daily_tasks(onboarding: Optional[Any] = None) -> List[Dict[str, Any
     onboarding_context = _compose_onboarding_context(onboarding)
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 
-    # 🧠 Gemini prompt — short, easy, repetitive tasks
-    prompt = f"""
-    You are a wellness coach designing daily recovery routines.
-
-    Create 5 very short, light, supportive tasks for the user below.
-    Some (1–2 max) should be *simple physical exercises* (stretching, breathing, hand movement, shoulder rolls, etc.)
-    that can be demonstrated within 8 seconds — no equipment, no floor work, suitable for sitting or standing.
-    Exercises should be easy and repetitive, not strenuous.
-
-    Each task must include:
-    - id (1..5)
-    - title
-    - description (1–2 short sentences)
-    - time (morning/afternoon/evening)
-    - type: "mind", "social", or "exercise"
-    - difficulty: "easy" or "medium"
-    - completed = false
-
-    Return ONLY a JSON array of exactly 5 tasks.
-
-    User context:
-    {onboarding_context}
-    """
-
     try:
-        payload = {
-            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-            "generationConfig": {"temperature": 0.6, "maxOutputTokens": 600},
+        # 🏋️ Call 1: Generate 2 physical exercises
+        exercise_prompt = f"""
+        You are a wellness coach designing daily recovery routines.
+
+        Create 2 simple physical exercises for the user below.
+        Each exercise should:
+        - be very short (6-8 seconds to demonstrate)
+        - require no equipment
+        - be easy and safe for all users
+        - involve small, clear, repetitive movements (neck rolls, shoulder shrugs, wrist rotations, breathing exercises, etc.)
+        - be suitable for sitting or standing (no floor work)
+
+        Each exercise must include:
+        - id (1..2)
+        - title
+        - description (1–2 short sentences explaining the movement)
+        - time (morning/afternoon/evening)
+        - exercise_type: "physical"
+        - difficulty: "easy" or "medium"
+        - completed = false
+
+        Return ONLY a JSON array of exactly 2 physical exercises.
+
+        User context:
+        {onboarding_context}
+        """
+
+        exercise_payload = {
+            "contents": [{"role": "user", "parts": [{"text": exercise_prompt}]}],
+            "generationConfig": {"temperature": 0.6, "maxOutputTokens": 400},
         }
-        headers = {"Content-Type": "application/json"}
-        resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=20)
-        resp.raise_for_status()
-        raw_text = (
-            resp.json()
+        exercise_resp = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(exercise_payload),
+            timeout=20,
+        )
+        exercise_resp.raise_for_status()
+        exercise_raw_text = (
+            exercise_resp.json()
             .get("candidates", [{}])[0]
             .get("content", {})
             .get("parts", [{}])[0]
             .get("text")
         )
 
-        parsed = _safe_json_parse(raw_text)
-        if not isinstance(parsed, list):
-            print("[Gemini] Failed to parse task JSON.")
-            return _default_tasks()
+        exercise_tasks = _safe_json_parse(exercise_raw_text)
+        if not isinstance(exercise_tasks, list) or len(exercise_tasks) < 2:
+            print("[Gemini] Failed to parse exercise tasks, using fallback.")
+            exercise_tasks = [
+                {
+                    "id": "1",
+                    "title": "Gentle Neck Rolls",
+                    "description": "Slowly rotate your neck in a clockwise direction, then counter-clockwise, to release tension.",
+                    "time": "morning",
+                    "exercise_type": "physical",
+                    "difficulty": "easy",
+                    "completed": False,
+                },
+                {
+                    "id": "2",
+                    "title": "Deep Breathing",
+                    "description": "Take 5 deep breaths: inhale for 4 counts, hold for 4, exhale for 4.",
+                    "time": "morning",
+                    "exercise_type": "physical",
+                    "difficulty": "easy",
+                    "completed": False,
+                },
+            ]
 
-        tasks = []
-        for item in parsed[:5]:
-            item["id"] = str(item.get("id", len(tasks) + 1))
+        # 🧠 Call 2: Generate 3 normal (mind/social) tasks
+        normal_prompt = f"""
+        You are a wellness coach designing daily recovery routines.
+
+        Create 3 supportive, non-physical tasks for the user below.
+        These should be mindfulness, social connection, or self-care activities (NOT physical exercises).
+
+        Each task must include:
+        - id (1..3)
+        - title
+        - description (1–2 short sentences)
+        - time (morning/afternoon/evening)
+        - difficulty: "easy" or "medium"
+        - completed = false
+
+        Return ONLY a JSON array of exactly 3 tasks.
+
+        User context:
+        {onboarding_context}
+        """
+
+        normal_payload = {
+            "contents": [{"role": "user", "parts": [{"text": normal_prompt}]}],
+            "generationConfig": {"temperature": 0.6, "maxOutputTokens": 400},
+        }
+        normal_resp = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(normal_payload),
+            timeout=20,
+        )
+        normal_resp.raise_for_status()
+        normal_raw_text = (
+            normal_resp.json()
+            .get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text")
+        )
+
+        normal_tasks = _safe_json_parse(normal_raw_text)
+        if not isinstance(normal_tasks, list) or len(normal_tasks) < 3:
+            print("[Gemini] Failed to parse normal tasks, using fallback.")
+            normal_tasks = [
+                {
+                    "id": "1",
+                    "title": "Hydration Check",
+                    "description": "Drink a glass of water and take a moment to check in with yourself.",
+                    "time": "morning",
+                    "difficulty": "easy",
+                    "completed": False,
+                },
+                {
+                    "id": "2",
+                    "title": "Journal Reflection",
+                    "description": "Write down three things you're grateful for today.",
+                    "time": "afternoon",
+                    "difficulty": "easy",
+                    "completed": False,
+                },
+                {
+                    "id": "3",
+                    "title": "Connect with Support",
+                    "description": "Reach out to a friend or attend a support meeting.",
+                    "time": "evening",
+                    "difficulty": "medium",
+                    "completed": False,
+                },
+            ]
+
+        # 🔹 Process physical exercises: enrich with video and image
+        processed_exercises = []
+        for idx, item in enumerate(exercise_tasks[:2]):
+            item["id"] = str(len(processed_exercises) + 1)
+            item.setdefault("completed", False)
+            item.setdefault("time", "morning")
+            item.setdefault("type", "exercise")
+
+            # Set exercise_type to "physical" for all physical exercises
+            item["exercise_type"] = "physical"
+
+            # Try to generate video for physical exercises
+            try:
+                print(f"🎥 Generating Veo3 demo for: {item['title']}")
+                enriched = _generate_exercise_with_video(
+                    item.get("title", ""), item.get("description", "")
+                )
+                item.update(enriched)
+                # Ensure exercise_type is "physical"
+                item["exercise_type"] = "physical"
+            except Exception as e:
+                print(f"[ExerciseGen] Failed for {item.get('title', 'unknown')}: {e}")
+                # Still mark as exercise even if video generation fails
+                item["type"] = "exercise"
+                item["video_url"] = None
+                item["pose_json_url"] = None
+                item["steps"] = []
+                item["exercise_type"] = "physical"
+
+            # Generate image for the exercise task
+            try:
+                print(f"🖼️ Generating image for: {item['title']}")
+                image_url = _generate_and_upload_task_image(
+                    item.get("title", ""), item.get("description", ""), "physical"
+                )
+                if image_url:
+                    item["image"] = image_url
+                    print(
+                        f"[ImageGen] ✓ Successfully generated image for '{item['title']}': {image_url}"
+                    )
+                else:
+                    print(
+                        f"[ImageGen] ✗ No image generated for '{item['title']}' (returned None)"
+                    )
+                    item["image"] = None
+            except Exception as e:
+                import traceback
+
+                print(
+                    f"[ImageGen] ✗ Exception generating image for {item.get('title', 'unknown')}: {e}"
+                )
+                print(f"[ImageGen] Traceback: {traceback.format_exc()}")
+                item["image"] = None
+
+            processed_exercises.append(item)
+
+        # 🔹 Process normal tasks: generate images, no video needed
+        processed_normal = []
+        for idx, item in enumerate(normal_tasks[:3]):
+            item["id"] = str(len(processed_exercises) + len(processed_normal) + 1)
             item.setdefault("completed", False)
             item.setdefault("time", "morning")
 
-            # 🔹 40% chance to turn into an exercise (if not already)
-            if item.get("type") == "exercise" or random.random() < 0.4:
-                try:
-                    print(f"🎥 Generating Veo3 demo for: {item['title']}")
-                    enriched = _generate_exercise_with_video(item["title"])
-                    item.update(enriched)
-                except Exception as e:
-                    print(f"[ExerciseGen] Failed for {item['title']}: {e}")
-                    item["video_url"] = None
-                    item["pose_json_url"] = None
-                    item["steps"] = []
+            # Generate image for the normal task
+            try:
+                print(f"🖼️ Generating image for: {item['title']}")
+                image_url = _generate_and_upload_task_image(
+                    item.get("title", ""), item.get("description", ""), "mindfulness"
+                )
+                if image_url:
+                    item["image"] = image_url
+                    print(
+                        f"[ImageGen] ✓ Successfully generated image for '{item['title']}': {image_url}"
+                    )
+                else:
+                    print(
+                        f"[ImageGen] ✗ No image generated for '{item['title']}' (returned None)"
+                    )
+                    item["image"] = None
+            except Exception as e:
+                import traceback
 
-            tasks.append(item)
+                print(
+                    f"[ImageGen] ✗ Exception generating image for {item.get('title', 'unknown')}: {e}"
+                )
+                print(f"[ImageGen] Traceback: {traceback.format_exc()}")
+                item["image"] = None
 
-        return tasks
+            processed_normal.append(item)
+
+        # 🔹 Combine and shuffle for variety
+        all_tasks = processed_exercises + processed_normal
+        random.shuffle(all_tasks)
+
+        # Reassign IDs after shuffle
+        for idx, task in enumerate(all_tasks, 1):
+            task["id"] = str(idx)
+
+        print(
+            f"[Gemini] Generated {len(processed_exercises)} exercises and {len(processed_normal)} normal tasks"
+        )
+        return all_tasks
 
     except Exception as e:
         print("[Gemini][daily_tasks] Error:", repr(e))
         return _default_tasks()
 
 
+def _detect_exercise_type(title: str, description: str = "") -> str:
+    """Detect exercise type from title and description."""
+    text = (title + " " + description).lower()
 
-def _generate_exercise_with_video(title: str) -> Dict[str, Any]:
+    if any(word in text for word in ["neck", "head", "cervical"]):
+        return "stretch"
+    elif any(word in text for word in ["shoulder", "arm", "wrist", "hand"]):
+        return "stretch"
+    elif any(word in text for word in ["breath", "inhale", "exhale", "pranayama"]):
+        return "breathing"
+    elif any(word in text for word in ["roll", "rotate", "circle"]):
+        return "stretch"
+    elif any(word in text for word in ["yoga", "pose", "asana"]):
+        return "yoga"
+    elif any(word in text for word in ["walk", "step", "move"]):
+        return "movement"
+    else:
+        return "stretch"  # default
+
+
+def _generate_exercise_with_video(title: str, description: str = "") -> Dict[str, Any]:
     """Use Gemini + Veo3 to create a short exercise video + pose reference."""
 
     gemini_key = _get_api_key()
@@ -351,10 +547,12 @@ def _generate_exercise_with_video(title: str) -> Dict[str, Any]:
       "title": "...",
       "one_liner": "...",
       "steps": ["...", "...", "..."],
-      "duration_seconds": 8
+      "duration_seconds": 8,
+      "exercise_type": "stretch" or "breathing" or "yoga" or "movement"
     }}
 
     Activity: "{title}"
+    Description: "{description}"
     """
 
     try:
@@ -362,7 +560,11 @@ def _generate_exercise_with_video(title: str) -> Dict[str, Any]:
             "contents": [{"role": "user", "parts": [{"text": g_prompt}]}],
             "generationConfig": {"temperature": 0.5, "maxOutputTokens": 250},
         }
-        g_resp = requests.post(g_url, headers={"Content-Type": "application/json"}, data=json.dumps(g_payload))
+        g_resp = requests.post(
+            g_url,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(g_payload),
+        )
         g_data = g_resp.json()
         raw_text = (
             g_data.get("candidates", [{}])[0]
@@ -371,6 +573,9 @@ def _generate_exercise_with_video(title: str) -> Dict[str, Any]:
             .get("text")
         )
         spec = _safe_json_parse(raw_text) or {}
+
+        # All physical exercises have exercise_type "physical"
+        exercise_type = "physical"
 
         veo_prompt = (
             f"Generate an 8-second, 720p video of a calm fitness instructor demonstrating: "
@@ -385,13 +590,18 @@ def _generate_exercise_with_video(title: str) -> Dict[str, Any]:
 
         # 🔹 Extract pose keypoints and upload
         pose_json = extract_pose_from_video(video_url)
-        pose_path = firebase_utils.upload_json(pose_json, f"poses/{title.replace(' ', '_')}.json")
+        pose_path = firebase_utils.upload_json(
+            pose_json, f"poses/{title.replace(' ', '_')}.json"
+        )
 
         # 🔹 Upload video to Firebase
-        video_path = firebase_utils.upload_file_from_url(video_url, f"videos/{title.replace(' ', '_')}.mp4")
+        video_path = firebase_utils.upload_file_from_url(
+            video_url, f"videos/{title.replace(' ', '_')}.mp4"
+        )
 
         return {
             "type": "exercise",
+            "exercise_type": exercise_type,
             "video_url": video_path,
             "pose_json_url": pose_path,
             "steps": spec.get("steps", []),
@@ -401,15 +611,16 @@ def _generate_exercise_with_video(title: str) -> Dict[str, Any]:
 
     except Exception as e:
         print(f"[ExerciseGen] Error for {title}: {e}")
+        # Even if video generation fails, mark it as an exercise
         return {
             "type": "exercise",
+            "exercise_type": "physical",
             "video_url": None,
             "pose_json_url": None,
             "steps": [],
             "one_liner": "Short 8s exercise demo.",
             "duration_seconds": 8,
         }
-
 
 
 def _generate_veo3_video(prompt: str) -> str:
@@ -429,6 +640,257 @@ def _generate_veo3_video(prompt: str) -> str:
     return data.get("video_url") or ""
 
 
+def _generate_image_with_gemini(
+    title: str, description: str, task_type: str = "general"
+) -> Optional[str]:
+    """Generate an image using Gemini's Imagen API - sends task info directly to image model."""
+    api_key = _get_api_key()
+    if not api_key:
+        print("[ImageGen] Missing API key, skipping image generation")
+        return None
+
+    try:
+        # Build a direct, specific image prompt from the task information
+        # Send the exercise/task directly to the image generation model
+        if task_type == "physical":
+            # For physical exercises, emphasize showing the movement/pose
+            prompt_text = f"""A detailed illustration or photograph showing a person performing the exercise: "{title}". 
+
+{description}
+
+The image must clearly show:
+- A person (full body or upper body) actively performing this specific exercise
+- The exact movements, poses, or actions described: {title}
+- Calming, positive, and motivational atmosphere
+- Clean, simple composition
+- Professional illustration or realistic photography style
+- Soft, warm lighting
+- No text, words, or labels anywhere in the image
+- Focus entirely on visualizing the exercise being performed
+
+Make sure the image directly represents and shows someone doing the exercise "{title}" - not a generic wellness scene."""
+
+        else:
+            # For mindfulness/wellness activities, show the specific activity
+            prompt_text = f"""A detailed illustration or photograph showing a person doing this activity: "{title}".
+
+{description}
+
+The image must clearly show:
+- A person engaged in the specific activity: {title}
+- The exact actions or setting described
+- Calming, positive, and motivational atmosphere  
+- Clean, simple composition
+- Professional illustration or realistic photography style
+- Soft, warm lighting
+- No text, words, or labels anywhere in the image
+- Focus entirely on visualizing the activity being done
+
+Make sure the image directly represents and shows someone doing the activity "{title}" - not a generic wellness scene."""
+
+        print(f"[ImageGen] Direct image prompt for '{title}': {prompt_text[:150]}...")
+
+        # Use Gemini's image generation model (gemini-2.5-flash-image or gemini-2.0-flash-preview-image-generation)
+        # Try gemini-2.5-flash-image first (Nano Banana), fallback to preview version
+        image_model = "gemini-2.5-flash-image"
+        image_url = f"https://generativelanguage.googleapis.com/v1beta/models/{image_model}:generateContent?key={api_key}"
+
+        image_payload = {
+            "contents": [{"role": "user", "parts": [{"text": prompt_text}]}],
+            "generationConfig": {
+                "temperature": 0.7,
+                "maxOutputTokens": 256,
+            },
+        }
+
+        print(f"[ImageGen] Generating image using {image_model}...")
+        image_resp = requests.post(
+            image_url,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(image_payload),
+            timeout=30,
+        )
+
+        # If the model is not available, try the preview version
+        if image_resp.status_code == 404:
+            print(f"[ImageGen] {image_model} not available, trying preview version...")
+            image_model = "gemini-2.0-flash-preview-image-generation"
+            image_url = f"https://generativelanguage.googleapis.com/v1beta/models/{image_model}:generateContent?key={api_key}"
+            image_resp = requests.post(
+                image_url,
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(image_payload),
+                timeout=30,
+            )
+
+        # Log response for debugging
+        print(f"[ImageGen] Image API response status: {image_resp.status_code}")
+        if image_resp.status_code != 200:
+            print(f"[ImageGen] Image API error response: {image_resp.text[:500]}")
+
+        image_resp.raise_for_status()
+        image_data = image_resp.json()
+        print(f"[ImageGen] Image API response data keys: {list(image_data.keys())}")
+
+        # Extract image URL or base64 data from response
+        candidates = image_data.get("candidates", [])
+        if candidates:
+            parts = candidates[0].get("content", {}).get("parts", [])
+            for part in parts:
+                # Check if there's an image URL in the response
+                if "inlineData" in part:
+                    # Image is returned as base64, need to handle this
+                    image_data_b64 = part["inlineData"].get("data")
+                    mime_type = part["inlineData"].get("mimeType", "image/png")
+                    if image_data_b64:
+                        # Return a special marker to indicate we have base64 data
+                        print(f"[ImageGen] Received base64 image data for '{title}'")
+                        return {
+                            "type": "base64",
+                            "data": image_data_b64,
+                            "mime_type": mime_type,
+                        }
+
+                # Check for image URL
+                if "url" in part:
+                    image_url_result = part["url"]
+                    print(
+                        f"[ImageGen] Generated image URL for '{title}': {image_url_result}"
+                    )
+                    return image_url_result
+
+        print(f"[ImageGen] No image data found in response for '{title}'")
+        return None
+
+    except requests.exceptions.HTTPError as e:
+        if e.response:
+            status_code = e.response.status_code
+            error_text = (
+                e.response.text[:500] if hasattr(e.response, "text") else str(e)
+            )
+            if status_code == 404:
+                print(
+                    f"[ImageGen] Image generation model not available (404). "
+                    f"Please enable image generation in your Gemini API. "
+                    f"Error: {error_text}"
+                )
+            else:
+                print(
+                    f"[ImageGen] HTTP error {status_code} generating image for '{title}': {error_text}"
+                )
+        else:
+            print(f"[ImageGen] HTTP error generating image for '{title}': {e}")
+        return None
+    except Exception as e:
+        import traceback
+
+        print(f"[ImageGen] Error generating image for '{title}': {e}")
+        print(f"[ImageGen] Traceback: {traceback.format_exc()}")
+        return None
+
+
+def _generate_placeholder_image_url(title: str, description: str) -> Optional[str]:
+    """Generate a placeholder image URL using a free image service.
+
+    NOTE: This is a fallback that provides generic placeholder images, not task-specific images.
+    In production, consider using Unsplash API with task-related keywords for better relevance.
+    """
+    try:
+        # Use Picsum Photos (Lorem Picsum) as a placeholder service
+        # This provides random placeholder images - good for testing only
+        # Note: These images are NOT related to the task content
+
+        # Create a deterministic seed from title for consistent images per task
+        import hashlib
+
+        seed = hashlib.md5(f"{title}{description}".encode()).hexdigest()[:8]
+
+        # Picsum Photos with seed for consistency (width=800, height=600)
+        placeholder_url = f"https://picsum.photos/seed/{seed}/800/600"
+        print(
+            f"[ImageGen] Using placeholder image for '{title}' (not task-specific): {placeholder_url}"
+        )
+        return placeholder_url
+    except Exception as e:
+        print(f"[ImageGen] Error generating placeholder for '{title}': {e}")
+        return None
+
+
+def _generate_and_upload_task_image(
+    title: str, description: str, task_type: str = "general"
+) -> Optional[str]:
+    """Generate an image for a task and upload it to Firebase Storage."""
+    try:
+        import base64
+
+        # Generate image using Gemini
+        image_result = _generate_image_with_gemini(title, description, task_type)
+
+        if not image_result:
+            # Fallback: Use placeholder image service
+            print(
+                f"[ImageGen] Gemini image generation failed for '{title}', using placeholder..."
+            )
+            placeholder_url = _generate_placeholder_image_url(title, description)
+            if placeholder_url:
+                # Upload placeholder to Firebase Storage for consistency
+                safe_title = (
+                    title.replace(" ", "_").replace("/", "_").replace("'", "")[:50]
+                )
+                image_path = f"images/tasks/{safe_title}.png"
+                try:
+                    uploaded_url = firebase_utils.upload_file_from_url(
+                        placeholder_url, image_path, content_type="image/jpeg"
+                    )
+                    print(
+                        f"[ImageGen] Uploaded placeholder image for '{title}' to {uploaded_url}"
+                    )
+                    return uploaded_url
+                except Exception as e:
+                    print(f"[ImageGen] Failed to upload placeholder for '{title}': {e}")
+                    # Return the placeholder URL directly if upload fails
+                    return placeholder_url
+            # Return None, frontend will use placeholder
+            return None
+
+        # Upload to Firebase Storage
+        safe_title = title.replace(" ", "_").replace("/", "_").replace("'", "")[:50]
+        image_path = f"images/tasks/{safe_title}.png"
+
+        # Handle base64 image data
+        if isinstance(image_result, dict) and image_result.get("type") == "base64":
+            # Upload base64 image directly
+            image_data = base64.b64decode(image_result["data"])
+            mime_type = image_result.get("mime_type", "image/png")
+
+            # Determine file extension from mime type
+            ext = "png"
+            if "jpeg" in mime_type or "jpg" in mime_type:
+                ext = "jpg"
+
+            image_path = f"images/tasks/{safe_title}.{ext}"
+
+            uploaded_url = firebase_utils.upload_file_from_bytes(
+                image_data, image_path, content_type=mime_type
+            )
+            print(f"[ImageGen] Uploaded base64 image for '{title}' to {uploaded_url}")
+            return uploaded_url
+
+        # Handle image URL
+        if isinstance(image_result, str) and image_result.startswith("http"):
+            uploaded_url = firebase_utils.upload_file_from_url(
+                image_result, image_path, content_type="image/png"
+            )
+            print(f"[ImageGen] Uploaded image URL for '{title}' to {uploaded_url}")
+            return uploaded_url
+
+        return None
+
+    except Exception as e:
+        print(f"[ImageGen] Error in image generation/upload for '{title}': {e}")
+        return None
+
+
 def _default_tasks() -> List[Dict[str, Any]]:
     return [
         {
@@ -438,6 +900,10 @@ def _default_tasks() -> List[Dict[str, Any]]:
             "time": "8:00 AM",
             "completed": False,
             "type": "exercise",
+            "exercise_type": "physical",
+            "video_url": None,
+            "difficulty": "easy",
+            "image": None,
         },
         {
             "id": "2",
@@ -445,6 +911,7 @@ def _default_tasks() -> List[Dict[str, Any]]:
             "description": "Drink a glass of water",
             "time": "10:00 AM",
             "completed": False,
+            "image": None,
         },
         {
             "id": "3",
@@ -452,6 +919,7 @@ def _default_tasks() -> List[Dict[str, Any]]:
             "description": "Reflect for 5 minutes",
             "time": "2:00 PM",
             "completed": False,
+            "image": None,
         },
     ]
 
