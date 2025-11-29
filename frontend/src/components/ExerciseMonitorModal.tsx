@@ -5,12 +5,16 @@ import type { DailyTaskItem } from '../lib/api';
 type ExerciseMonitorModalProps = {
   task: DailyTaskItem;
   isOpen: boolean;
+  steps: string[];
+  referenceVideoUrl?: string;
   onClose: () => void;
 };
 
 export default function ExerciseMonitorModal({
   task,
   isOpen,
+  steps,
+  referenceVideoUrl,
   onClose,
 }: ExerciseMonitorModalProps) {
   if (!isOpen) return null;
@@ -35,7 +39,9 @@ export default function ExerciseMonitorModal({
             backendUrl={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/pose/compare`}
             captureFps={10}
             showHints={true}
-            referenceVideoUrl={task.video_url || undefined}
+            referenceVideoUrl={referenceVideoUrl || undefined}
+            taskSteps={steps}
+            showTrackingPoints={true}
           />
         </div>
       </div>

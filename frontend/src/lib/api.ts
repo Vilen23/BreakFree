@@ -44,6 +44,7 @@ export type DailyTaskItem = {
   exercise_type?: string | null;
   difficulty?: string | null;
   image?: string | null;
+  steps?: string[] | null; // Steps for physical exercises (3 steps from exercises.json)
 };
 
 export type DailyTasksPlan = {

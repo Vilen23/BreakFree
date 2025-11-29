@@ -37,7 +37,30 @@ async def get_today_tasks(
             "addiction": onboarding.addiction,
             "answers": onboarding.answers,
         }
-    tasks = generate_daily_tasks(onboarding_payload)
+
+    # Get recently used exercises from the last 2 days to avoid repetition
+    recent_tasks = database.get_recent_daily_tasks(current_user.id, days=2)
+    recently_used_exercises = []
+    for task_plan in recent_tasks:
+        if task_plan.tasks:
+            for task in task_plan.tasks:
+                # Only include physical exercises
+                if isinstance(task, dict) and task.get("exercise_type") == "physical":
+                    exercise_title = task.get("title", "")
+                    if exercise_title:
+                        recently_used_exercises.append(exercise_title)
+                elif (
+                    hasattr(task, "exercise_type") and task.exercise_type == "physical"
+                ):
+                    exercise_title = getattr(task, "title", "")
+                    if exercise_title:
+                        recently_used_exercises.append(exercise_title)
+
+    print(
+        f"[TasksRouter] Found {len(recently_used_exercises)} recently used exercises: {recently_used_exercises}"
+    )
+
+    tasks = generate_daily_tasks(onboarding_payload, recently_used_exercises)
     print(
         f"[TasksRouter] generated tasks for user={current_user.id} date={today} tasks={len(tasks)}"
     )

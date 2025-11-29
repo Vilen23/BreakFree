@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import random
+from pathlib import Path
 from utils import firebase_utils
 from utils.PoseTracker.extract_pose_from_video import extract_pose_from_video
 from typing import Optional, Any, Dict, List
@@ -9,6 +10,85 @@ from typing import Optional, Any, Dict, List
 
 def _get_api_key() -> Optional[str]:
     return os.getenv("GEMINI_API_KEY")
+
+
+def _load_exercises() -> List[Dict[str, Any]]:
+    """Load exercises from exercises.json file."""
+    try:
+        # Get the path to exercises.json relative to this file
+        current_dir = Path(__file__).parent.parent
+        exercises_path = current_dir / "exercises.json"
+
+        if not exercises_path.exists():
+            print(f"[Exercises] exercises.json not found at {exercises_path}")
+            return []
+
+        with open(exercises_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            exercises = data.get("exercises", [])
+            print(f"[Exercises] Loaded {len(exercises)} exercises from exercises.json")
+            return exercises
+    except Exception as e:
+        print(f"[Exercises] Error loading exercises.json: {e}")
+        return []
+
+
+def _get_user_addiction(onboarding: Optional[Any]) -> Optional[str]:
+    """Extract addiction type from onboarding data."""
+    if not onboarding:
+        return None
+
+    try:
+        if isinstance(onboarding, dict):
+            addiction = onboarding.get("addiction") or onboarding.get("primary_issue")
+        else:
+            addiction = getattr(onboarding, "addiction", None)
+
+        if addiction:
+            # Normalize addiction string to match JSON format
+            addiction_lower = str(addiction).lower().strip()
+            # Map common variations
+            mapping = {
+                "smoking": "smoking",
+                "cigarettes": "smoking",
+                "tobacco": "smoking",
+                "alcohol": "alcohol",
+                "drinking": "alcohol",
+                "social media": "social_media",
+                "socialmedia": "social_media",
+                "phone": "phone",
+                "smartphone": "phone",
+                "stress": "stress",
+                "anxiety": "anxiety",
+            }
+            return mapping.get(addiction_lower, addiction_lower)
+        return None
+    except Exception:
+        return None
+
+
+def _filter_exercises_by_addiction(
+    exercises: List[Dict[str, Any]], addiction: Optional[str]
+) -> List[Dict[str, Any]]:
+    """Filter exercises that match the user's addiction or are applicable to all."""
+    if not addiction:
+        # If no addiction specified, return exercises tagged with "all"
+        return [ex for ex in exercises if "all" in ex.get("addictions", [])]
+
+    addiction_normalized = addiction.lower().strip()
+    filtered = []
+
+    for exercise in exercises:
+        addictions = exercise.get("addictions", [])
+        # Include if addiction matches or exercise is for "all"
+        if (
+            addiction_normalized in [a.lower() for a in addictions]
+            or "all" in addictions
+        ):
+            filtered.append(exercise)
+
+    print(f"[Exercises] Filtered {len(filtered)} exercises for addiction: {addiction}")
+    return filtered
 
 
 def _compose_onboarding_context(onboarding: Optional[Any]) -> str:
@@ -247,8 +327,16 @@ def summarize_journal_to_supportive_reply(
 #         return default_tasks
 
 
-def generate_daily_tasks(onboarding: Optional[Any] = None) -> List[Dict[str, Any]]:
-    """Generate 5 daily wellness tasks: 2 physical exercises + 3 normal tasks."""
+def generate_daily_tasks(
+    onboarding: Optional[Any] = None,
+    recently_used_exercises: Optional[List[str]] = None,
+) -> List[Dict[str, Any]]:
+    """Generate 5 daily wellness tasks: 2 physical exercises + 3 normal tasks.
+
+    Args:
+        onboarding: User onboarding data
+        recently_used_exercises: List of exercise titles used in the last 2 days (to avoid repetition)
+    """
 
     api_key = _get_api_key()
     if not api_key:
@@ -259,28 +347,68 @@ def generate_daily_tasks(onboarding: Optional[Any] = None) -> List[Dict[str, Any
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 
     try:
-        # 🏋️ Call 1: Generate 2 physical exercises
+        # 🏋️ Load and filter exercises from exercises.json
+        all_exercises = _load_exercises()
+        user_addiction = _get_user_addiction(onboarding)
+        filtered_exercises = _filter_exercises_by_addiction(
+            all_exercises, user_addiction
+        )
+
+        # Filter out exercises used in the last 2 days
+        if recently_used_exercises:
+            recently_used_set = {ex.lower().strip() for ex in recently_used_exercises}
+            original_count = len(filtered_exercises)
+            filtered_exercises = [
+                ex
+                for ex in filtered_exercises
+                if ex.get("name", "").lower().strip() not in recently_used_set
+            ]
+            print(
+                f"[Exercises] Filtered out {len(recently_used_exercises)} recently used exercises. {len(filtered_exercises)} exercises remaining (from {original_count})."
+            )
+
+            # If we filtered out too many and have less than 2 exercises, use all exercises as fallback
+            if len(filtered_exercises) < 2:
+                print(
+                    "[Exercises] Warning: Too few exercises after filtering. Using all available exercises."
+                )
+                filtered_exercises = _filter_exercises_by_addiction(
+                    all_exercises, user_addiction
+                )
+
+        # If no filtered exercises, use exercises tagged with "all" as fallback
+        if not filtered_exercises:
+            print(
+                "[Exercises] No exercises matched addiction, using exercises for 'all'"
+            )
+            filtered_exercises = [
+                ex for ex in all_exercises if "all" in ex.get("addictions", [])
+            ]
+            if not filtered_exercises:
+                filtered_exercises = all_exercises[:10]  # Use first 10 as fallback
+
+        # 🏋️ Call 1: Have Gemini select 2 exercises from the filtered list
+        exercises_list_text = "\n".join(
+            [
+                f"{i+1}. {ex['name']} - {ex.get('exercise_type', 'stretch')} (for: {', '.join(ex.get('addictions', []))})\n   Steps: {' | '.join([s.get('description', '') for s in ex.get('steps', [])[:2]])}"
+                for i, ex in enumerate(
+                    filtered_exercises[:15]
+                )  # Limit to 15 for prompt size
+            ]
+        )
+
         exercise_prompt = f"""
         You are a wellness coach designing daily recovery routines.
 
-        Create 2 simple physical exercises for the user below.
-        Each exercise should:
-        - be very short (6-8 seconds to demonstrate)
-        - require no equipment
-        - be easy and safe for all users
-        - involve small, clear, repetitive movements (neck rolls, shoulder shrugs, wrist rotations, breathing exercises, etc.)
-        - be suitable for sitting or standing (no floor work)
+        Select 2 physical exercises from the list below that would be most helpful for this user.
+        Consider the user's addiction and current needs when selecting.
 
-        Each exercise must include:
-        - id (1..2)
-        - title
-        - description (1–2 short sentences explaining the movement)
-        - time (morning/afternoon/evening)
-        - exercise_type: "physical"
-        - difficulty: "easy" or "medium"
-        - completed = false
+        Available exercises:
+        {exercises_list_text}
 
-        Return ONLY a JSON array of exactly 2 physical exercises.
+        Return ONLY a JSON array with exactly 2 objects, each containing:
+        - "exercise_id": the number from the list above (1-{min(15, len(filtered_exercises))})
+        - "time": "morning" or "afternoon" or "evening"
 
         User context:
         {onboarding_context}
@@ -288,7 +416,7 @@ def generate_daily_tasks(onboarding: Optional[Any] = None) -> List[Dict[str, Any
 
         exercise_payload = {
             "contents": [{"role": "user", "parts": [{"text": exercise_prompt}]}],
-            "generationConfig": {"temperature": 0.6, "maxOutputTokens": 400},
+            "generationConfig": {"temperature": 0.6, "maxOutputTokens": 200},
         }
         exercise_resp = requests.post(
             url,
@@ -305,29 +433,81 @@ def generate_daily_tasks(onboarding: Optional[Any] = None) -> List[Dict[str, Any
             .get("text")
         )
 
-        exercise_tasks = _safe_json_parse(exercise_raw_text)
-        if not isinstance(exercise_tasks, list) or len(exercise_tasks) < 2:
-            print("[Gemini] Failed to parse exercise tasks, using fallback.")
-            exercise_tasks = [
-                {
-                    "id": "1",
-                    "title": "Gentle Neck Rolls",
-                    "description": "Slowly rotate your neck in a clockwise direction, then counter-clockwise, to release tension.",
-                    "time": "morning",
-                    "exercise_type": "physical",
-                    "difficulty": "easy",
-                    "completed": False,
-                },
-                {
-                    "id": "2",
-                    "title": "Deep Breathing",
-                    "description": "Take 5 deep breaths: inhale for 4 counts, hold for 4, exhale for 4.",
-                    "time": "morning",
-                    "exercise_type": "physical",
-                    "difficulty": "easy",
-                    "completed": False,
-                },
-            ]
+        selected_exercises_data = _safe_json_parse(exercise_raw_text)
+
+        # Build exercise_tasks from selected exercises using their predefined steps
+        exercise_tasks = []
+        if (
+            isinstance(selected_exercises_data, list)
+            and len(selected_exercises_data) >= 2
+        ):
+            for selection in selected_exercises_data[:2]:
+                exercise_id = selection.get("exercise_id") or selection.get("id")
+                if exercise_id and 1 <= exercise_id <= len(filtered_exercises):
+                    # Get the exercise from filtered list (exercise_id is 1-indexed)
+                    selected_ex = filtered_exercises[exercise_id - 1]
+
+                    # Format steps as array of strings from the JSON file
+                    steps = [
+                        step.get("description", "")
+                        for step in selected_ex.get("steps", [])
+                    ]
+
+                    # Create a longer description with all steps
+                    description = selected_ex.get("name", "")
+                    if steps:
+                        description += f". {'. '.join(steps)}"
+                    else:
+                        description += " - A physical exercise to help with recovery."
+
+                    exercise_tasks.append(
+                        {
+                            "id": str(len(exercise_tasks) + 1),
+                            "title": selected_ex.get("name", ""),
+                            "description": description,
+                            "time": selection.get("time", "morning"),
+                            "exercise_type": "physical",
+                            "difficulty": selected_ex.get("difficulty", "easy"),
+                            "completed": False,
+                            "steps": steps,  # Include all 3 steps from JSON
+                            "exercise_type_detail": selected_ex.get(
+                                "exercise_type", "stretch"
+                            ),
+                        }
+                    )
+
+        # Fallback if Gemini selection failed - randomly select from filtered exercises
+        if len(exercise_tasks) < 2:
+            print(
+                "[Gemini] Failed to parse exercise selections, using random selection from filtered exercises."
+            )
+            random_selected = random.sample(
+                filtered_exercises, min(2, len(filtered_exercises))
+            )
+            exercise_tasks = []
+            for ex in random_selected:
+                steps = [step.get("description", "") for step in ex.get("steps", [])]
+
+                # Create a longer description with all steps
+                description = ex.get("name", "")
+                if steps:
+                    description += f". {'. '.join(steps)}"
+                else:
+                    description += " - A physical exercise to help with recovery."
+
+                exercise_tasks.append(
+                    {
+                        "id": str(len(exercise_tasks) + 1),
+                        "title": ex.get("name", ""),
+                        "description": description,
+                        "time": random.choice(["morning", "afternoon", "evening"]),
+                        "exercise_type": "physical",
+                        "difficulty": ex.get("difficulty", "easy"),
+                        "completed": False,
+                        "steps": steps,  # Include all 3 steps from JSON
+                        "exercise_type_detail": ex.get("exercise_type", "stretch"),
+                    }
+                )
 
         # 🧠 Call 2: Generate 3 normal (mind/social) tasks
         normal_prompt = f"""
@@ -410,13 +590,25 @@ def generate_daily_tasks(onboarding: Optional[Any] = None) -> List[Dict[str, Any
             # Set exercise_type to "physical" for all physical exercises
             item["exercise_type"] = "physical"
 
+            # Preserve steps from JSON file if they exist
+            existing_steps = item.get("steps", [])
+
             # Try to generate video for physical exercises
             try:
                 print(f"🎥 Generating Veo3 demo for: {item['title']}")
                 enriched = _generate_exercise_with_video(
                     item.get("title", ""), item.get("description", "")
                 )
-                item.update(enriched)
+                # Update item but preserve steps
+                video_url = enriched.get("video_url")
+                pose_json_url = enriched.get("pose_json_url")
+                item["video_url"] = video_url
+                item["pose_json_url"] = pose_json_url
+                # Always use existing steps from JSON if available, otherwise use generated steps
+                if existing_steps:
+                    item["steps"] = existing_steps
+                elif enriched.get("steps"):
+                    item["steps"] = enriched.get("steps")
                 # Ensure exercise_type is "physical"
                 item["exercise_type"] = "physical"
             except Exception as e:
@@ -425,7 +617,8 @@ def generate_daily_tasks(onboarding: Optional[Any] = None) -> List[Dict[str, Any
                 item["type"] = "exercise"
                 item["video_url"] = None
                 item["pose_json_url"] = None
-                item["steps"] = []
+                # Always preserve steps from JSON if available
+                item["steps"] = existing_steps if existing_steps else []
                 item["exercise_type"] = "physical"
 
             # Generate image for the exercise task
@@ -452,6 +645,12 @@ def generate_daily_tasks(onboarding: Optional[Any] = None) -> List[Dict[str, Any
                 )
                 print(f"[ImageGen] Traceback: {traceback.format_exc()}")
                 item["image"] = None
+
+            # Ensure steps are always present in the response (use existing_steps if available)
+            if "steps" not in item:
+                item["steps"] = existing_steps if existing_steps else []
+            elif not item.get("steps") and existing_steps:
+                item["steps"] = existing_steps
 
             processed_exercises.append(item)
 

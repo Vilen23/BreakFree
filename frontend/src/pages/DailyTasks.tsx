@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { getDailyTasks, type DailyTaskItem } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 import ExerciseMonitorModal from '../components/ExerciseMonitorModal';
 
 /** tiny classnames helper used in your layout */
@@ -18,6 +19,7 @@ const cn = (...parts: Array<string | false | null | undefined>) =>
 
 export default function DailyWellnessPlanner() {
   const { user } = useAuth();
+  const { isMonitorModalOpen, setIsMonitorModalOpen } = useModal();
 
   // tasks state
   const [taskList, setTaskList] = useState<DailyTaskItem[]>([]);
@@ -26,7 +28,6 @@ export default function DailyWellnessPlanner() {
   console.log(dayCompleted)
   // monitor modal
   const [selectedTask, setSelectedTask] = useState<DailyTaskItem | null>(null);
-  const [isMonitorModalOpen, setIsMonitorModalOpen] = useState<boolean>(false);
 
   // ============================================================================
   // Loading Slideshow (isolated from main task logic)
@@ -467,7 +468,7 @@ export default function DailyWellnessPlanner() {
 
       {/* Exercise Monitor Modal */}
       {selectedTask && (
-        <ExerciseMonitorModal task={selectedTask} isOpen={isMonitorModalOpen} onClose={handleCloseMonitor} />
+        <ExerciseMonitorModal referenceVideoUrl={selectedTask.video_url ?? undefined} steps={selectedTask.steps ?? []} task={selectedTask} isOpen={isMonitorModalOpen} onClose={handleCloseMonitor} />  
       )}
     </div>
   );

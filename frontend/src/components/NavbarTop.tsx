@@ -1,9 +1,11 @@
 
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useModal } from '../context/ModalContext'
 
 export default function NavbarTop() {
   const { user, signOut } = useAuth()
+  const { isMonitorModalOpen } = useModal()
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -11,7 +13,7 @@ export default function NavbarTop() {
     navigate('/')
   }
   return (
-    <nav className="bg-[#171717] w-full h-[8vh] px-6 py-4 flex items-center justify-between fixed top-0 left-0 z-50">
+    <nav className={`bg-[#171717] w-full h-[8vh] px-6 py-4 flex items-center justify-between fixed top-0 left-0 z-50 transition-opacity duration-300 ${isMonitorModalOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
       <div>
         <Link to="/">
           <img src="/nobg.png" alt="logo" className="h-10 cursor-pointer" />

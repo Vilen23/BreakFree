@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage'
 import NavbarTop from './components/NavbarTop'
 import SignupPage from './pages/SignupPage'
 import { AuthProvider } from './context/AuthContext'
+import { ModalProvider } from './context/ModalContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import JournalingPage from './pages/JournalingPage'
 import { OnboardingFlow } from './pages/OnBoarding'
@@ -17,19 +18,21 @@ function App() {
   return (
     <>
       <AuthProvider>
-        <NavbarTop />
+        <ModalProvider>
+          <NavbarTop />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/onboarding" element={<OnboardingFlow />} />
-          <Route path="/pose-tracker" element={<PoseTracker taskName='push-ups' taskId="1" backendUrl="http://localhost:8000/api/pose/compare" captureFps={10} showHints={true} />} />
+          <Route path="/pose-tracker" element={<PoseTracker taskName='push-ups' taskId="1" backendUrl="http://localhost:8000/api/pose/compare" captureFps={10} showHints={true} taskSteps={['Step 1: Setup', 'Step 2: Body Position', 'Step 3: Lower Down']} />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/post-onboarding" element={<PostOnboarding />} />
             <Route path="/journal" element={<JournalingPage />} />
             <Route path="/daily-tasks" element={<DailyWellnessPlanner />} />
           </Route>
         </Routes>
+        </ModalProvider>
       </AuthProvider>
     </>
   )

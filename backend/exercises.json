@@ -1,0 +1,424 @@
+{
+  "exercises": [
+    {
+      "id": 1,
+      "name": "Deep Lung Expansion Stretch",
+      "addictions": ["smoking"],
+      "exercise_type": "breathing",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Stand straight with your feet shoulder-width apart and place both hands on your ribs, feeling the expansion of your chest as you prepare to breathe deeply."
+        },
+        {
+          "step_number": 2,
+          "description": "Inhale deeply through your nose for 4 seconds, focusing on expanding your chest and feeling your ribs move outward. Keep your shoulders relaxed and your posture tall."
+        },
+        {
+          "step_number": 3,
+          "description": "Exhale slowly through your mouth for 6 seconds, allowing your chest to naturally contract. Repeat this breathing cycle 10 times, maintaining a steady rhythm throughout."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Craving Punch-Out",
+      "addictions": ["smoking", "alcohol"],
+      "exercise_type": "movement",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Stand with your feet comfortably apart, maintaining good balance. Raise both fists to chest level, keeping your elbows slightly bent and your core engaged."
+        },
+        {
+          "step_number": 2,
+          "description": "Punch the air forward in alternating left-right movements for 30 seconds, using controlled and deliberate motions. Focus on releasing tension with each punch while maintaining steady breathing."
+        },
+        {
+          "step_number": 3,
+          "description": "Shake your arms loose for 10 seconds, allowing your muscles to relax completely. Let your arms hang naturally and take a few deep breaths to center yourself."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Neck Roll Reset",
+      "addictions": ["social_media", "stress"],
+      "exercise_type": "stretch",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Begin by gently dropping your chin toward your chest, feeling a comfortable stretch in the back of your neck. Keep your shoulders relaxed and your back straight."
+        },
+        {
+          "step_number": 2,
+          "description": "Slowly roll your head in a complete circle, moving from chin to chest, then to the right, back, left, and returning to center. Move at a controlled, comfortable pace without forcing the movement."
+        },
+        {
+          "step_number": 3,
+          "description": "After completing one full rotation, pause briefly and then switch directions, rolling your head in the opposite direction. Continue for 10 seconds in each direction, focusing on smooth, fluid movements."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Grounding Step March",
+      "addictions": ["all"],
+      "exercise_type": "movement",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Stand in a comfortable position and begin marching in place gently, lifting your feet just a few inches off the ground. Keep your movements smooth and controlled."
+        },
+        {
+          "step_number": 2,
+          "description": "Raise your knees slightly higher with each step, creating a rhythmic marching motion. Keep your arms relaxed at your sides or swing them naturally to maintain balance."
+        },
+        {
+          "step_number": 3,
+          "description": "Continue marching while breathing rhythmically for 1 minute, focusing on the connection between your feet and the ground. Feel grounded and present in the moment."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Shoulder Openers",
+      "addictions": ["smoking", "anxiety"],
+      "exercise_type": "stretch",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Lift your shoulders up toward your ears, creating tension in your upper trapezius muscles. Hold this position for a moment, feeling the contraction."
+        },
+        {
+          "step_number": 2,
+          "description": "Roll your shoulders back and down in a smooth, circular motion, releasing the tension and opening up your chest. Focus on squeezing your shoulder blades together slightly."
+        },
+        {
+          "step_number": 3,
+          "description": "Repeat this shoulder roll motion 15 times, moving slowly and deliberately. With each repetition, focus on releasing more tension and improving your posture."
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Wall Push Relaxer",
+      "addictions": ["alcohol", "anger"],
+      "exercise_type": "stretch",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Stand facing a wall and place your palms flat against it at shoulder height, keeping your arms straight and your fingers spread comfortably."
+        },
+        {
+          "step_number": 2,
+          "description": "Lean forward gently, pushing lightly against the wall while keeping your feet planted. Feel a stretch in your chest, shoulders, and upper back as you maintain this position."
+        },
+        {
+          "step_number": 3,
+          "description": "Hold this stretch for 10 seconds, breathing deeply. Then relax and step back, allowing your muscles to release. Repeat this sequence 3-5 times for maximum benefit."
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Finger Detox Stretch",
+      "addictions": ["social_media"],
+      "exercise_type": "stretch",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Interlock your fingers together, either with palms facing you or away from you, whichever feels more comfortable. Ensure your fingers are fully interlocked."
+        },
+        {
+          "step_number": 2,
+          "description": "Stretch your arms outward in front of you, pushing your palms away from your body. Feel the stretch in your fingers, wrists, and forearms as you extend fully."
+        },
+        {
+          "step_number": 3,
+          "description": "Hold this stretch for 15 seconds, breathing normally. Then release and shake your hands gently to restore circulation. Repeat 2-3 times if desired."
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Slow Balance Stand",
+      "addictions": ["alcohol", "focus"],
+      "exercise_type": "balance",
+      "difficulty": "medium",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Stand on one leg, lifting your other foot slightly off the ground. Keep your standing leg slightly bent and focus your gaze on a fixed point in front of you to help maintain balance."
+        },
+        {
+          "step_number": 2,
+          "description": "Hold this position for 10 seconds, engaging your core muscles and keeping your body aligned. If you feel unsteady, you can lightly touch a wall or chair for support."
+        },
+        {
+          "step_number": 3,
+          "description": "Gently lower your raised foot and switch to the other leg, repeating the same balance hold. Alternate between legs 3-5 times, focusing on stability and control."
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Full Back Stretch",
+      "addictions": ["smoking", "cravings"],
+      "exercise_type": "stretch",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Stand with your feet hip-width apart and raise both arms overhead, reaching toward the ceiling. Lengthen your spine and feel the stretch through your entire back."
+        },
+        {
+          "step_number": 2,
+          "description": "Slowly lean forward from your hips, reaching toward your toes. Bend your knees slightly if needed to avoid strain. Feel the stretch along your hamstrings and entire back."
+        },
+        {
+          "step_number": 3,
+          "description": "Hold this position for 8 seconds, breathing deeply. Then rise slowly back to standing, uncurling your spine vertebra by vertebra. Repeat 3-5 times for a complete stretch."
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Palm Tap Breathing",
+      "addictions": ["social_media", "anxiety"],
+      "exercise_type": "breathing",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Place your fingertips on your chest, positioning them comfortably over your heart area. Use a light, gentle tapping motion, creating a rhythmic pattern."
+        },
+        {
+          "step_number": 2,
+          "description": "Inhale deeply through your nose for 4 counts, feeling your chest expand under your fingertips. Focus on slow, controlled breathing."
+        },
+        {
+          "step_number": 3,
+          "description": "Exhale slowly through your mouth for 6 counts while continuing to tap gently. The tapping helps create a calming, rhythmic focus. Repeat this cycle 5-10 times."
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Mini-Squat Reset",
+      "addictions": ["all"],
+      "exercise_type": "movement",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Stand with your feet shoulder-width apart, toes pointing slightly outward. Keep your back straight and your core engaged, with your arms extended in front of you for balance."
+        },
+        {
+          "step_number": 2,
+          "description": "Bend your knees and lower your body as if sitting back into a chair, keeping your weight in your heels. Lower yourself only a few inches, maintaining control throughout the movement."
+        },
+        {
+          "step_number": 3,
+          "description": "Stand back up to the starting position, pushing through your heels and engaging your glutes. Repeat this mini-squat motion 10 times, moving at a steady, controlled pace."
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Wrist Looseners",
+      "addictions": ["phone"],
+      "exercise_type": "stretch",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Extend one arm forward at shoulder height, keeping your elbow straight but not locked. Make a loose fist or keep your fingers relaxed and extended."
+        },
+        {
+          "step_number": 2,
+          "description": "Rotate your wrist clockwise in slow, deliberate circles, making 10 full rotations. Feel the movement in your wrist joint and the stretch in your forearm muscles."
+        },
+        {
+          "step_number": 3,
+          "description": "Reverse the direction and rotate your wrist counterclockwise for another 10 rotations. Then switch to your other arm and repeat the same sequence on both sides."
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Foot Pressure Relief",
+      "addictions": ["alcohol", "stress"],
+      "exercise_type": "grounding",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Stand comfortably and press one foot firmly into the ground, distributing your weight evenly across the entire sole. Focus on feeling the connection between your foot and the floor."
+        },
+        {
+          "step_number": 2,
+          "description": "Hold this pressure for 5 seconds, engaging the muscles in your foot and lower leg. Breathe deeply and feel grounded and stable in this position."
+        },
+        {
+          "step_number": 3,
+          "description": "Release the pressure and switch to the other foot, repeating the same firm press and hold. Alternate between feet 5-10 times, focusing on the grounding sensation."
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Side Body Energizer",
+      "addictions": ["smoking", "fatigue"],
+      "exercise_type": "stretch",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Stand with your feet hip-width apart and raise your right arm overhead, reaching toward the ceiling. Keep your left arm relaxed at your side."
+        },
+        {
+          "step_number": 2,
+          "description": "Bend gently to your left side, creating a stretch along your right side from your fingertips down through your ribs. Hold for a moment, breathing deeply."
+        },
+        {
+          "step_number": 3,
+          "description": "Return to center and switch sides, raising your left arm overhead and bending to the right. Alternate between sides 5-10 times, moving slowly and smoothly."
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Jaw Release Stretch",
+      "addictions": ["all"],
+      "exercise_type": "stretch",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Open your mouth as wide as comfortably possible, feeling a stretch in your jaw muscles. Keep the movement controlled and avoid forcing it beyond your natural range."
+        },
+        {
+          "step_number": 2,
+          "description": "Slowly move your jaw from side to side in a gentle, controlled motion. Feel the release of tension in your temporomandibular joint and surrounding muscles."
+        },
+        {
+          "step_number": 3,
+          "description": "Relax your jaw completely and close your mouth gently. Repeat this sequence 5 times, focusing on releasing tension and improving jaw mobility with each repetition."
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Shoulder Tap Cross Crawl",
+      "addictions": ["social_media", "focus"],
+      "exercise_type": "movement",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Stand comfortably and touch your right hand to your left shoulder, crossing your body's midline. Keep your movements controlled and your core engaged."
+        },
+        {
+          "step_number": 2,
+          "description": "Return your right hand to your side, then touch your left hand to your right shoulder, creating a cross-body movement pattern."
+        },
+        {
+          "step_number": 3,
+          "description": "Continue alternating between sides for 20 seconds, maintaining a steady rhythm. This cross-crawl movement helps improve coordination and focus while engaging both sides of your brain."
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Mini Sun Salute",
+      "addictions": ["smoking", "calmness"],
+      "exercise_type": "yoga",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Stand with your feet together and your hands at your sides. As you inhale slowly, raise both arms overhead, reaching toward the sky with your palms facing each other."
+        },
+        {
+          "step_number": 2,
+          "description": "As you exhale slowly, lower your arms back down to your sides in a controlled, flowing motion, synchronizing your breath with the movement."
+        },
+        {
+          "step_number": 3,
+          "description": "Repeat this simple sun salute motion 5 times slowly, focusing on the connection between your breath and movement. Let each repetition bring a sense of calm and centeredness."
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Stress Ball Squeeze",
+      "addictions": ["alcohol", "anger", "cravings"],
+      "exercise_type": "movement",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Close one hand into a tight fist, squeezing as hard as comfortably possible. Hold this tight squeeze for 5 seconds, feeling the tension build in your hand and forearm."
+        },
+        {
+          "step_number": 2,
+          "description": "Release your fist fully, opening your hand wide and spreading your fingers apart. Feel the release of tension and the rush of blood returning to your hand."
+        },
+        {
+          "step_number": 3,
+          "description": "Repeat this squeeze and release motion for both hands, alternating between them. Complete 5-10 repetitions on each hand, using this as a physical outlet for stress and tension."
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Spine Twist",
+      "addictions": ["social_media", "sedentary"],
+      "exercise_type": "stretch",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Sit or stand with your spine straight and your shoulders relaxed. Keep your feet flat on the floor if sitting, or maintain good posture if standing."
+        },
+        {
+          "step_number": 2,
+          "description": "Gently twist your torso to the right, using your core muscles to initiate the movement. Place your left hand on your right knee or thigh for support, and look over your right shoulder."
+        },
+        {
+          "step_number": 3,
+          "description": "Hold the twist for a few breaths, then slowly return to center. Switch to the left side, twisting in the opposite direction. Alternate between sides 5-10 times, moving slowly and breathing deeply."
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Face Splash Reset",
+      "addictions": ["all"],
+      "exercise_type": "grounding",
+      "difficulty": "easy",
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "Cup your hands together and bring them to your face, positioning them comfortably over your cheeks and forehead. You can use warm or cool water if available, or simply use the pressure of your hands."
+        },
+        {
+          "step_number": 2,
+          "description": "Gently tap or rub your cheeks and forehead with your fingertips or palms, using light, circular motions. This stimulates blood flow and provides a refreshing, grounding sensation."
+        },
+        {
+          "step_number": 3,
+          "description": "Take a deep breath in through your nose and exhale slowly through your mouth, allowing yourself to relax completely. Lower your hands and take a moment to feel refreshed and reset."
+        }
+      ]
+    }
+  ]
+}

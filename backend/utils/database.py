@@ -1,7 +1,7 @@
 # app/firebase.py
 import firebase_admin
 from firebase_admin import credentials, firestore
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 import uuid
 
@@ -384,3 +384,19 @@ def update_daily_tasks(tasks_id: str, update_data: Dict[str, Any]) -> bool:
     doc_ref = db.collection(DAILY_TASKS_COLLECTION).document(tasks_id)
     doc_ref.update(update_data)
     return True
+
+
+def get_recent_daily_tasks(user_id: str, days: int = 2) -> List[FirestoreDailyTasks]:
+    """Get daily tasks from the last N days (excluding today)."""
+    from datetime import datetime, timedelta
+
+    recent_tasks = []
+    today = datetime.utcnow()
+
+    for i in range(1, days + 1):
+        date = (today - timedelta(days=i)).strftime("%Y-%m-%d")
+        task = get_daily_tasks_by_date(user_id, date)
+        if task:
+            recent_tasks.append(task)
+
+    return recent_tasks

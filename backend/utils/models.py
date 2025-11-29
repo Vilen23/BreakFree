@@ -109,6 +109,9 @@ class DailyTaskItem(BaseModel):
     exercise_type: Optional[str] = None  # e.g., "stretch", "breathing", etc.
     difficulty: Optional[str] = None  # e.g., "easy", "medium", "hard"
     image: Optional[str] = None  # NEW — AI generated image URL
+    steps: Optional[List[str]] = (
+        None  # Steps for physical exercises (3 steps from exercises.json)
+    )
 
 
 class DailyTasksPlan(BaseModel):
