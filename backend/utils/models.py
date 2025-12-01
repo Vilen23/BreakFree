@@ -112,6 +112,10 @@ class DailyTaskItem(BaseModel):
     steps: Optional[List[str]] = (
         None  # Steps for physical exercises (3 steps from exercises.json)
     )
+    accuracy: Optional[float] = None  # Exercise accuracy score (0.0 to 1.0)
+    exercise_id: Optional[int] = (
+        None  # ID from exercises.json - used for pose comparison
+    )
 
 
 class DailyTasksPlan(BaseModel):
@@ -126,5 +130,24 @@ class DailyTasksPlan(BaseModel):
 
 
 class PoseCompareRequest(BaseModel):
-    task_id: str
-    user_pose_sequence: list
+    task_id: str  # Daily task ID (for reference and saving score)
+    reference_video_url: Optional[str] = (
+        None  # Video URL from task - used to find reference pose
+    )
+    user_id: Optional[str] = None  # User ID for storing score
+    reference_pose_sequence: Optional[list] = (
+        None  # Optional: backend loads from pre-computed files if not provided
+    )
+    user_pose_sequence: list  # Real-time extracted from user camera
+
+
+# Contact form models
+class ContactFormRequest(BaseModel):
+    name: str
+    email: EmailStr
+    message: str
+
+
+class ContactFormResponse(BaseModel):
+    success: bool
+    message: str

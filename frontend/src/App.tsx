@@ -11,7 +11,7 @@ import JournalingPage from './pages/JournalingPage'
 import { OnboardingFlow } from './pages/OnBoarding'
 import PostOnboarding from './pages/PostOnboarding'
 import DailyWellnessPlanner from './pages/DailyTasks'
-import PoseTracker from './components/PoseTracker/Posetracker'
+// import PoseTracker from './components/PoseTracker/Posetracker'
 
 function App() {
 
@@ -25,7 +25,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/onboarding" element={<OnboardingFlow />} />
-          <Route path="/pose-tracker" element={<PoseTracker taskName='push-ups' taskId="1" backendUrl="http://localhost:8000/api/pose/compare" captureFps={10} showHints={true} taskSteps={['Step 1: Setup', 'Step 2: Body Position', 'Step 3: Lower Down']} />} />
+          {/* <Route path="/pose-tracker" element={<PoseTracker taskName='push-ups' taskId="1" backendUrl="http://localhost:8000/api/pose/compare" captureFps={10} showHints={true} taskSteps={['Step 1: Setup', 'Step 2: Body Position', 'Step 3: Lower Down']} />} /> */}
           <Route element={<ProtectedRoute />}>
             <Route path="/post-onboarding" element={<PostOnboarding />} />
             <Route path="/journal" element={<JournalingPage />} />

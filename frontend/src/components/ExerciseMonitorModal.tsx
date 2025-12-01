@@ -8,6 +8,7 @@ type ExerciseMonitorModalProps = {
   steps: string[];
   referenceVideoUrl?: string;
   onClose: () => void;
+  onExerciseComplete?: () => void; // Callback when exercise is completed
 };
 
 export default function ExerciseMonitorModal({
@@ -16,16 +17,17 @@ export default function ExerciseMonitorModal({
   steps,
   referenceVideoUrl,
   onClose,
+  onExerciseComplete,
 }: ExerciseMonitorModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overflow-auto">
-      <div className="relative min-h-screen bg-gray-50">
+    <div className="fixed inset-0 z-[55] overflow-y-hidden bg-black/60 backdrop-blur-sm overflow-auto" style={{ top: '5vh', height: 'calc(100vh - 8vh)' }}>
+      <div className="relative h-full bg-gray-50">
         {/* Close Button - Fixed Position */}
         <button
           onClick={onClose}
-          className="fixed top-6 right-6 z-50 p-3 bg-white hover:bg-gray-100 rounded-full shadow-lg transition-colors"
+          className="fixed top-9 right-6 z-50 p-3 bg-white hover:bg-gray-100 rounded-full shadow-lg transition-colors"
           aria-label="Close"
         >
           <X className="w-6 h-6 text-gray-600" />
@@ -34,14 +36,20 @@ export default function ExerciseMonitorModal({
         {/* PoseTracker Component */}
         <div className="pt-6">
           <PoseTracker
+            onClose={onClose}
             taskId={task.id}
             taskName={task.title}
-            backendUrl={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/pose/compare`}
+            backendUrl={(() => {
+              const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+              const apiPath = baseUrl.endsWith('/api') ? '' : '/api';
+              return `${baseUrl}${apiPath}/pose/compare`;
+            })()}
             captureFps={10}
             showHints={true}
             referenceVideoUrl={referenceVideoUrl || undefined}
             taskSteps={steps}
             showTrackingPoints={true}
+            onExerciseComplete={onExerciseComplete}
           />
         </div>
       </div>

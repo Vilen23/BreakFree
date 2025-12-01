@@ -1,35 +1,6 @@
-import React, { useState } from "react"
-
-interface FormData {
-  name: string
-  email: string
-  message: string
-}
-
 export const ContactUsSection = () => {
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    email: "",
-    message: "",
-  })
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleSubmit = () => {
-    console.log("Form submitted:", formData)
-    alert("Message sent! We'll get back to you soon.")
-  }
-
   return (
-    <div className="bg-gray-50 py-20 px-8">
+    <div id='contact' className="bg-gray-50 py-20 px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
@@ -39,62 +10,37 @@ export const ContactUsSection = () => {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-16 items-start">
-          {/* Left - Contact Form */}
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Left - Contact Information */}
           <div className="max-w-md mx-auto lg:mx-0">
-            <div className="space-y-6">
-              {/* Name Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Your Name
-                </label>
-                <input
-                placeholder="John Doe"
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="w-full focus:outline-none px-4 py-3 border border-gray-200 rounded-lg focus:ring-3 focus:ring-blue-500 focus:border-transparent transition-all duration-300 bg-white"
-                />
+            <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
+              <div className="text-center">
+                <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+                  Get in Touch
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Have questions or need support? Reach out to us via email.
+                </p>
+                <a
+                  href="mailto:breakfree337@gmail.com"
+                  className="inline-flex items-center justify-center px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                  breakfree337@gmail.com
+                </a>
               </div>
-
-              {/* Email Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <input
-                  placeholder="john@example.com"
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full px-4 focus:outline-none py-3 border border-gray-200 rounded-lg focus:ring-3 focus:ring-blue-500 focus:border-transparent transition-all duration-300 bg-white"
-                />
-              </div>
-
-              {/* Message Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Message
-                </label>
-                <textarea
-                  placeholder="Tell us how we can help..."
-                  name="message"
-                  value={formData.message}
-                  onChange={handleInputChange}
-                  rows={5}
-                  className="w-full px-4 focus:outline-none py-3 border border-gray-200 rounded-lg focus:ring-3 focus:ring-blue-500 focus:border-transparent transition-all duration-300 bg-white resize-none"
-                />
-              </div>
-
-              {/* Submit Button */}
-              <button
-                onClick={handleSubmit}
-                className="w-full cursor-pointer bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                Send Message
-              </button>
             </div>
           </div>
 

@@ -89,9 +89,7 @@ export function OnboardingFlow() {
               if (!data.addiction) return
               try {
                 await saveOnboarding({ addiction: data.addiction, answers: data.answers })
-                // Allow access to post-onboarding page only once, immediately after save
-                sessionStorage.setItem("post_onboarding_allowed", "1")
-                navigate("/post-onboarding", { replace: true })
+                navigate("/daily-tasks", { replace: true })
               } catch (e) {
                 console.error("Failed to save onboarding", e)
               }

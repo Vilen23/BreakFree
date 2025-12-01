@@ -1,5 +1,8 @@
+import { useNavigate } from "react-router-dom"
+
 export const HeroSection = () => {
-  return (
+  const navigate = useNavigate()
+    return (
     <div className="min-h-[92vh] bg-gradient-to-br from-sky-50 to-emerald-50 flex items-center justify-center">
       <div className="px-8 py-16">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
@@ -18,7 +21,7 @@ export const HeroSection = () => {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="bg-blue-500 hover:bg-blue-600 cursor-pointer text-white px-8 py-3 rounded-full font-semibold transition-all duration-300 transform hover:scale-105">
+              <button onClick={() => navigate("/journal")} className="bg-blue-500 hover:bg-blue-600 cursor-pointer text-white px-8 py-3 rounded-full font-semibold transition-all duration-300 transform hover:scale-105">
                 Start Journaling
               </button>
               <button className="border-2 border-blue-500 text-blue-500 cursor-pointer hover:bg-blue-500 hover:text-white px-8 py-3 rounded-full font-semibold transition-all duration-300">
@@ -34,7 +37,7 @@ export const HeroSection = () => {
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600 mb-2">
-                  15k+
+                  15
                 </div>
                 <div className="text-sm text-gray-600">Lives Helped</div>
               </div>

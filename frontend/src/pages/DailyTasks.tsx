@@ -8,7 +8,7 @@ import {
   CheckCircle2,
   Play
 } from 'lucide-react';
-import { getDailyTasks, type DailyTaskItem } from '../lib/api';
+import { getDailyTasks, updateTaskCompletion, markDayComplete, type DailyTaskItem } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import ExerciseMonitorModal from '../components/ExerciseMonitorModal';
@@ -194,22 +194,55 @@ export default function DailyWellnessPlanner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  // toggle a task's completion and persist to localStorage
-  const toggleTask = (taskId: string | number) => {
+  // toggle a task's completion and persist to backend + localStorage
+  const toggleTask = async (taskId: string | number) => {
+    const task = taskList.find(t => String(t.id) === String(taskId));
+    if (!task) return;
+
+    const newCompletedStatus = !task.completed;
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Optimistically update UI
     setTaskList(prev => {
-      const updated = prev.map(task =>
-        String(task.id) === String(taskId) ? { ...task, completed: !task.completed } : task
+      const updated = prev.map(t =>
+        String(t.id) === String(taskId) ? { ...t, completed: newCompletedStatus } : t
       );
-      const today = new Date().toISOString().slice(0, 10);
-      if (user?.id) {
-        const cacheKey = `daily_tasks:${user.id}:${today}`;
+      const nowCompleted = updated.length > 0 && updated.every(t => t.completed);
+      setDayCompleted(nowCompleted);
+      return updated;
+    });
+
+    // Update cache
+    if (user?.id) {
+      const cacheKey = `daily_tasks:${user.id}:${today}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached) as { tasks: DailyTaskItem[] };
+        const updated = parsed.tasks.map(t =>
+          String(t.id) === String(taskId) ? { ...t, completed: newCompletedStatus } : t
+        );
         localStorage.setItem(cacheKey, JSON.stringify({ tasks: updated }));
         const nowCompleted = updated.length > 0 && updated.every(t => t.completed);
         localStorage.setItem(`${cacheKey}:completed`, nowCompleted ? 'true' : 'false');
-        setDayCompleted(nowCompleted);
       }
-      return updated;
-    });
+    }
+
+    // Update backend
+    try {
+      await updateTaskCompletion(String(taskId), newCompletedStatus, today);
+      console.log(`[DailyTasks] Task ${taskId} marked as ${newCompletedStatus ? 'complete' : 'incomplete'}`);
+    } catch (error) {
+      console.error(`[DailyTasks] Failed to update task completion:`, error);
+      // Revert on error
+      setTaskList(prev => {
+        const updated = prev.map(t =>
+          String(t.id) === String(taskId) ? { ...t, completed: task.completed } : t
+        );
+        const nowCompleted = updated.length > 0 && updated.every(t => t.completed);
+        setDayCompleted(nowCompleted);
+        return updated;
+      });
+    }
   };
 
   const completedCount = taskList.filter(t => t.completed).length;
@@ -235,18 +268,64 @@ export default function DailyWellnessPlanner() {
     }
   };
 
-  const markDayComplete = () => {
+  const handleMarkDayComplete = async () => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Optimistically update UI
     setTaskList(prev => {
       const updated = prev.map(t => ({ ...t, completed: true }));
-      const today = new Date().toISOString().slice(0, 10);
-      if (user?.id) {
-        const cacheKey = `daily_tasks:${user.id}:${today}`;
-        localStorage.setItem(cacheKey, JSON.stringify({ tasks: updated }));
-        localStorage.setItem(`${cacheKey}:completed`, 'true');
-      }
       setDayCompleted(true);
       return updated;
     });
+
+    // Update cache
+    if (user?.id) {
+      const cacheKey = `daily_tasks:${user.id}:${today}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached) as { tasks: DailyTaskItem[] };
+        const updated = parsed.tasks.map(t => ({ ...t, completed: true }));
+        localStorage.setItem(cacheKey, JSON.stringify({ tasks: updated }));
+        localStorage.setItem(`${cacheKey}:completed`, 'true');
+      }
+    }
+
+    // Update backend
+    try {
+      const result = await markDayComplete(today);
+      console.log(`[DailyTasks] Day marked as complete: ${result.message}`);
+    } catch (error) {
+      console.error(`[DailyTasks] Failed to mark day as complete:`, error);
+      // Revert on error - reload from API
+      try {
+        const plan = await getDailyTasks(false);
+        setTaskList(plan.tasks as DailyTaskItem[]);
+        const allCompleted = plan.tasks.every(t => t.completed);
+        setDayCompleted(allCompleted);
+      } catch (e) {
+        console.error(`[DailyTasks] Failed to reload tasks after error:`, e);
+      }
+    }
+  };
+
+  const refreshTasks = async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const userId = user?.id;
+    if (!userId) return;
+    
+    try {
+      const data = await getDailyTasks(false); // Refresh from API
+      setTaskList(data.tasks as DailyTaskItem[]);
+      // Update cache
+      const cacheKey = `daily_tasks:${userId}:${today}`;
+      localStorage.setItem(cacheKey, JSON.stringify({ tasks: data.tasks }));
+      const allCompleted = data.tasks.every(t => t.completed);
+      setDayCompleted(allCompleted);
+      localStorage.setItem(`${cacheKey}:completed`, allCompleted ? 'true' : 'false');
+      console.log('[DailyTasks] Tasks refreshed from API');
+    } catch (error) {
+      console.error('Failed to refresh tasks:', error);
+    }
   };
 
   const handleMonitorClick = (task: DailyTaskItem) => {
@@ -257,6 +336,22 @@ export default function DailyWellnessPlanner() {
   const handleCloseMonitor = () => {
     setIsMonitorModalOpen(false);
     setSelectedTask(null);
+  };
+
+  const handleExerciseComplete = async () => {
+    // Refresh tasks to get updated accuracy scores
+    await refreshTasks();
+    
+    // If there's a selected task, mark it as complete
+    if (selectedTask) {
+      const today = new Date().toISOString().slice(0, 10);
+      try {
+        await updateTaskCompletion(selectedTask.id, true, today);
+        console.log(`[DailyTasks] Task ${selectedTask.id} marked as complete after exercise`);
+      } catch (error) {
+        console.error(`[DailyTasks] Failed to mark task as complete:`, error);
+      }
+    }
   };
 
   // small helper to render time icon (keeps your new layout's behavior)
@@ -322,7 +417,7 @@ export default function DailyWellnessPlanner() {
             </button>
 
             <button
-              onClick={markDayComplete}
+              onClick={handleMarkDayComplete}
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/50 py-4 text-sm font-semibold text-slate-200 transition-all hover:bg-slate-800 hover:text-white active:scale-95 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
@@ -397,7 +492,7 @@ export default function DailyWellnessPlanner() {
                   {/* Image */}
                   <div className="relative h-32 w-full overflow-hidden bg-slate-100">
                     <img
-                      src={(task as any).image || '/placeholder.svg'}
+                      src={task.image || '/placeholder.svg'}
                       alt={task.title}
                       className={cn(
                         'h-full w-full object-cover transition-transform duration-500 group-hover:scale-105',
@@ -437,7 +532,25 @@ export default function DailyWellnessPlanner() {
                       {task.description}
                     </p>
 
-                    {(task.exercise_type === 'physical' || (task as any).video_url) && !task.completed && (
+                    {/* Show accuracy if task is completed and has accuracy score */}
+                    {task.completed && task.accuracy !== undefined && task.accuracy !== null && (
+                      <div className="mt-4 rounded-lg bg-teal-50 border border-teal-200 px-3 py-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-teal-700">Exercise Accuracy</span>
+                          <span className="text-lg font-bold text-teal-600">
+                            {(task.accuracy * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-2 w-full rounded-full bg-teal-100 overflow-hidden">
+                          <div
+                            className="h-full bg-teal-500 transition-all duration-500"
+                            style={{ width: `${task.accuracy * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {(task.exercise_type === 'physical' || task.video_url) && !task.completed && (
                       <div className="mt-auto pt-4">
                         <button
                           onClick={() => handleMonitorClick(task)}
@@ -468,7 +581,14 @@ export default function DailyWellnessPlanner() {
 
       {/* Exercise Monitor Modal */}
       {selectedTask && (
-        <ExerciseMonitorModal referenceVideoUrl={selectedTask.video_url ?? undefined} steps={selectedTask.steps ?? []} task={selectedTask} isOpen={isMonitorModalOpen} onClose={handleCloseMonitor} />  
+        <ExerciseMonitorModal 
+          referenceVideoUrl={selectedTask.video_url ?? undefined} 
+          steps={selectedTask.steps ?? []} 
+          task={selectedTask} 
+          isOpen={isMonitorModalOpen} 
+          onClose={handleCloseMonitor}
+          onExerciseComplete={handleExerciseComplete}
+        />  
       )}
     </div>
   );

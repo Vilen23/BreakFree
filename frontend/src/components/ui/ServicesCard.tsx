@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ServicesCardProps {
   title: string;
@@ -6,10 +7,12 @@ interface ServicesCardProps {
   features: string[];
   buttonText: string;
   image: string;
+  onClick?: () => void;
+  className?: string;
 }
-export const ServicesCard = ({ title, description, features, buttonText, image }: ServicesCardProps) => {
+export const ServicesCard = ({ title, description, features, buttonText, image, onClick, className }: ServicesCardProps) => {
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+    <div className={cn("bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2", className)}>
     {/* Image */}
     <div>
         <img src={image} alt="" className='h-[160px] w-full object-cover'/>
@@ -32,7 +35,7 @@ export const ServicesCard = ({ title, description, features, buttonText, image }
         ))}
       </div>
       
-      <button className="bg-blue-500 cursor-pointer hover:bg-blue-600 text-white px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105">
+      <button onClick={onClick} className="bg-blue-500 cursor-pointer hover:bg-blue-600 text-white px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105">
         {buttonText}
       </button>
     </div>

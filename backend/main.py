@@ -1,6 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import authrouter, journalrouter, onboardingrouter, tasksrouter, poserouter
+from routers import (
+    authrouter,
+    journalrouter,
+    onboardingrouter,
+    tasksrouter,
+    poserouter,
+    contactrouter,
+)
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -28,12 +35,12 @@ app.include_router(journalrouter.router, prefix="/api")
 app.include_router(onboardingrouter.router, prefix="/api")
 app.include_router(tasksrouter.router, prefix="/api")
 app.include_router(poserouter.router, prefix="/api")
+app.include_router(contactrouter.router, prefix="/api")
 
 
 @app.get("/")
 async def root():
     return {"message": "Welcome to BreakFree API"}
-
 
 
 @app.get("/health")

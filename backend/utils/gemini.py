@@ -387,27 +387,36 @@ def generate_daily_tasks(
             if not filtered_exercises:
                 filtered_exercises = all_exercises[:10]  # Use first 10 as fallback
 
+        # Shuffle exercises to ensure variety in selection order
+        shuffled_exercises = filtered_exercises.copy()
+        random.shuffle(shuffled_exercises)
+
         # 🏋️ Call 1: Have Gemini select 2 exercises from the filtered list
         exercises_list_text = "\n".join(
             [
                 f"{i+1}. {ex['name']} - {ex.get('exercise_type', 'stretch')} (for: {', '.join(ex.get('addictions', []))})\n   Steps: {' | '.join([s.get('description', '') for s in ex.get('steps', [])[:2]])}"
                 for i, ex in enumerate(
-                    filtered_exercises[:15]
-                )  # Limit to 15 for prompt size
+                    shuffled_exercises[:15]
+                )  # Limit to 15 for prompt size, use shuffled list
             ]
         )
+
+        recently_used_text = ""
+        if recently_used_exercises:
+            recently_used_text = f"\n\nIMPORTANT: Avoid these recently used exercises: {', '.join(recently_used_exercises[:5])}. Select DIFFERENT exercises to provide variety."
 
         exercise_prompt = f"""
         You are a wellness coach designing daily recovery routines.
 
-        Select 2 physical exercises from the list below that would be most helpful for this user.
+        Select 2 DIFFERENT physical exercises from the list below that would be most helpful for this user.
         Consider the user's addiction and current needs when selecting.
+        IMPORTANT: Select exercises that are DIFFERENT from each other and provide variety in movement types.{recently_used_text}
 
         Available exercises:
         {exercises_list_text}
 
         Return ONLY a JSON array with exactly 2 objects, each containing:
-        - "exercise_id": the number from the list above (1-{min(15, len(filtered_exercises))})
+        - "exercise_id": the number from the list above (1-{min(15, len(shuffled_exercises))})
         - "time": "morning" or "afternoon" or "evening"
 
         User context:
@@ -416,7 +425,10 @@ def generate_daily_tasks(
 
         exercise_payload = {
             "contents": [{"role": "user", "parts": [{"text": exercise_prompt}]}],
-            "generationConfig": {"temperature": 0.6, "maxOutputTokens": 200},
+            "generationConfig": {
+                "temperature": 0.9,
+                "maxOutputTokens": 200,
+            },  # Increased temperature for more variety
         }
         exercise_resp = requests.post(
             url,
@@ -437,15 +449,43 @@ def generate_daily_tasks(
 
         # Build exercise_tasks from selected exercises using their predefined steps
         exercise_tasks = []
+        selected_exercise_names = set()  # Track selected exercises to avoid duplicates
+
         if (
             isinstance(selected_exercises_data, list)
             and len(selected_exercises_data) >= 2
         ):
             for selection in selected_exercises_data[:2]:
                 exercise_id = selection.get("exercise_id") or selection.get("id")
-                if exercise_id and 1 <= exercise_id <= len(filtered_exercises):
-                    # Get the exercise from filtered list (exercise_id is 1-indexed)
-                    selected_ex = filtered_exercises[exercise_id - 1]
+                if exercise_id and 1 <= exercise_id <= len(shuffled_exercises):
+                    # Get the exercise from shuffled list (exercise_id is 1-indexed)
+                    selected_ex = shuffled_exercises[exercise_id - 1]
+                    exercise_name = selected_ex.get("name", "")
+
+                    # Skip if we already selected this exercise, find alternative
+                    if exercise_name in selected_exercise_names:
+                        print(
+                            f"[Gemini] Duplicate exercise detected: {exercise_name}, finding alternative..."
+                        )
+                        # Try to find a different exercise from shuffled list
+                        available_ex = [
+                            ex
+                            for ex in shuffled_exercises
+                            if ex.get("name") not in selected_exercise_names
+                        ]
+                        if available_ex:
+                            selected_ex = available_ex[0]
+                            exercise_name = selected_ex.get("name", "")
+                            print(
+                                f"[Gemini] Using alternative exercise: {exercise_name}"
+                            )
+                        else:
+                            print(
+                                f"[Gemini] No alternatives available, skipping duplicate"
+                            )
+                            continue
+
+                    selected_exercise_names.add(exercise_name)
 
                     # Format steps as array of strings from the JSON file
                     steps = [
@@ -473,6 +513,14 @@ def generate_daily_tasks(
                             "exercise_type_detail": selected_ex.get(
                                 "exercise_type", "stretch"
                             ),
+                            "video_url": (
+                                selected_ex.get("videolink")
+                                if selected_ex.get("videolink")
+                                else None
+                            ),  # Map videolink to video_url
+                            "exercise_id": selected_ex.get(
+                                "id"
+                            ),  # Store exercise ID for pose comparison
                         }
                     )
 
@@ -481,8 +529,17 @@ def generate_daily_tasks(
             print(
                 "[Gemini] Failed to parse exercise selections, using random selection from filtered exercises."
             )
+            # Ensure we don't select duplicates
+            available_exercises = [
+                ex
+                for ex in shuffled_exercises
+                if ex.get("name") not in [t.get("title") for t in exercise_tasks]
+            ]
+            if len(available_exercises) < 2:
+                available_exercises = shuffled_exercises.copy()
+
             random_selected = random.sample(
-                filtered_exercises, min(2, len(filtered_exercises))
+                available_exercises, min(2, len(available_exercises))
             )
             exercise_tasks = []
             for ex in random_selected:
@@ -506,6 +563,12 @@ def generate_daily_tasks(
                         "completed": False,
                         "steps": steps,  # Include all 3 steps from JSON
                         "exercise_type_detail": ex.get("exercise_type", "stretch"),
+                        "video_url": (
+                            ex.get("videolink") if ex.get("videolink") else None
+                        ),  # Map videolink to video_url
+                        "exercise_id": ex.get(
+                            "id"
+                        ),  # Store exercise ID for pose comparison
                     }
                 )
 
@@ -592,34 +655,45 @@ def generate_daily_tasks(
 
             # Preserve steps from JSON file if they exist
             existing_steps = item.get("steps", [])
+            existing_video_url = item.get("video_url")
 
-            # Try to generate video for physical exercises
-            try:
-                print(f"🎥 Generating Veo3 demo for: {item['title']}")
-                enriched = _generate_exercise_with_video(
-                    item.get("title", ""), item.get("description", "")
+            # Only generate video if one doesn't already exist from JSON (check for non-empty string)
+            if existing_video_url and existing_video_url.strip():
+                print(
+                    f"📹 Using existing video URL from exercises.json for: {item['title']}"
                 )
-                # Update item but preserve steps
-                video_url = enriched.get("video_url")
-                pose_json_url = enriched.get("pose_json_url")
-                item["video_url"] = video_url
-                item["pose_json_url"] = pose_json_url
-                # Always use existing steps from JSON if available, otherwise use generated steps
-                if existing_steps:
-                    item["steps"] = existing_steps
-                elif enriched.get("steps"):
-                    item["steps"] = enriched.get("steps")
-                # Ensure exercise_type is "physical"
-                item["exercise_type"] = "physical"
-            except Exception as e:
-                print(f"[ExerciseGen] Failed for {item.get('title', 'unknown')}: {e}")
-                # Still mark as exercise even if video generation fails
-                item["type"] = "exercise"
-                item["video_url"] = None
-                item["pose_json_url"] = None
-                # Always preserve steps from JSON if available
-                item["steps"] = existing_steps if existing_steps else []
-                item["exercise_type"] = "physical"
+                item["video_url"] = existing_video_url
+                item["pose_json_url"] = None  # No pose tracking for pre-existing videos
+            else:
+                # Try to generate video for physical exercises
+                try:
+                    print(f"🎥 Generating Veo3 demo for: {item['title']}")
+                    enriched = _generate_exercise_with_video(
+                        item.get("title", ""), item.get("description", "")
+                    )
+                    # Update item but preserve steps
+                    video_url = enriched.get("video_url")
+                    pose_json_url = enriched.get("pose_json_url")
+                    item["video_url"] = video_url
+                    item["pose_json_url"] = pose_json_url
+                    # Always use existing steps from JSON if available, otherwise use generated steps
+                    if existing_steps:
+                        item["steps"] = existing_steps
+                    elif enriched.get("steps"):
+                        item["steps"] = enriched.get("steps")
+                    # Ensure exercise_type is "physical"
+                    item["exercise_type"] = "physical"
+                except Exception as e:
+                    print(
+                        f"[ExerciseGen] Failed for {item.get('title', 'unknown')}: {e}"
+                    )
+                    # Still mark as exercise even if video generation fails
+                    item["type"] = "exercise"
+                    item["video_url"] = None
+                    item["pose_json_url"] = None
+                    # Always preserve steps from JSON if available
+                    item["steps"] = existing_steps if existing_steps else []
+                    item["exercise_type"] = "physical"
 
             # Generate image for the exercise task
             try:

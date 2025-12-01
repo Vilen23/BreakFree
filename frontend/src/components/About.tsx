@@ -2,7 +2,7 @@ import { CheckCircle, Calendar, AlertTriangle } from 'lucide-react';
 
 export const AboutSection = () => {
   return (
-    <div className="py-20 my-[8vh] flex items-center justify-center bg-gradient-to-br from-white to-sky-50 px-8">
+    <div id='about' className="py-20 my-[8vh] flex items-center justify-center bg-gradient-to-br from-white to-sky-50 px-8">
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-16 items-start">
           {/* Left Content */}

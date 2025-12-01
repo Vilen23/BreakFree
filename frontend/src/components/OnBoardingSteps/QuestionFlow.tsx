@@ -103,9 +103,8 @@ const QUESTIONS: Record<string, Question[]> = {
       id: "alcohol-frequency",
       title: "Drinking Frequency",
       subtitle: "How often do you drink per week?",
-      type: "slider",
-      min: 0,
-      max: 7,
+      type: "text",
+      placeholder: "Enter number of times per week",
     },
     {
       id: "alcohol-impact",
@@ -122,24 +121,23 @@ const QUESTIONS: Record<string, Question[]> = {
       placeholder: "e.g., Quit completely, reduce consumption...",
     },
   ],
-  Nicotine: [
+  Smoking: [
     {
-      id: "nicotine-frequency",
-      title: "Nicotine Use",
+      id: "smoking-frequency",
+      title: "Smoking Frequency",
       subtitle: "How many times per day?",
-      type: "slider",
-      min: 0,
-      max: 30,
+      type: "text",
+      placeholder: "Enter number of times per day",
     },
     {
-      id: "nicotine-impact",
+      id: "smoking-impact",
       title: "Health Concerns",
       subtitle: "What concerns you most?",
       type: "multiple-choice",
       options: ["Physical health", "Cost", "Social impact", "All of the above"],
     },
     {
-      id: "nicotine-goal",
+      id: "smoking-goal",
       title: "Your Goal",
       subtitle: "What outcome do you want?",
       type: "text",
@@ -251,6 +249,7 @@ export function QuestionFlow({ addiction, answers, onAnswer, onComplete }: Quest
               {currentQuestion.type === "text" && (
                 <div className="space-y-3">
                   <Input
+                    type={currentQuestion.id.includes("frequency") ? "number" : "text"}
                     placeholder={currentQuestion.placeholder}
                     value={(answers[currentQuestion.id] as string) || ""}
                     onChange={(e) => onAnswer(currentQuestion.id, e.target.value)}

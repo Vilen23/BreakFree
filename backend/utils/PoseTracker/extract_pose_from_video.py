@@ -123,9 +123,13 @@ def extract_pose_from_video(
     Returns:
         List of frames; each frame is a list of landmark dicts {name, x, y, score}
     """
-    if not os.path.exists(video_path):
+    # Check if video_path is a URL or local file
+    is_url = video_path.startswith("http://") or video_path.startswith("https://")
+
+    if not is_url and not os.path.exists(video_path):
         raise FileNotFoundError(f"Video not found: {video_path}")
 
+    # OpenCV VideoCapture can handle both local files and URLs
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise RuntimeError(f"Failed to open video: {video_path}")

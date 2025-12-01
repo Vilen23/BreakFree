@@ -2,7 +2,7 @@ import { Heart, Mail } from 'lucide-react';
 
 export const BreakFreeFooter = () => {
   return (
-    <footer className="bg-slate-800 text-white py-16 px-8">
+    <footer id='footer' className="bg-slate-800 text-white py-16 px-8">
       <div className="max-w-7xl mx-auto">
         {/* Main Footer Content */}
         <div className="grid md:grid-cols-4 gap-8 mb-12">

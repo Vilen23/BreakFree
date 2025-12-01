@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useAuth } from "@/context/AuthContext"
 import * as tf from "@tensorflow/tfjs"
 import * as posedetection from "@tensorflow-models/pose-detection"
 import "@tensorflow/tfjs-backend-webgl"
@@ -27,6 +27,7 @@ type PosePoint = {
 }
 
 type PoseTrackerProps = {
+  onClose: () => void
   taskId: string
   taskName: string
   backendUrl?: string
@@ -35,27 +36,28 @@ type PoseTrackerProps = {
   referenceVideoUrl?: string
   taskSteps: string[]
   showTrackingPoints?: boolean
+  onExerciseComplete?: () => void // Callback when exercise is completed with score
 }
 
 export default function PoseTracker({
+  onClose,
   taskId,
   taskName = "Push Down",
   backendUrl = "http://localhost:8000/api/pose/compare",
   captureFps = 10,
   showHints = true,
-  referenceVideoUrl = "src/reference_videos/task_1.mp4",
+  referenceVideoUrl = "https://github.com/Vilen23/breakfree-assets/raw/refs/heads/main/DeepLung.mp4",
   taskSteps = [],
   showTrackingPoints = true,
+  onExerciseComplete,
 }: PoseTrackerProps) {
-  const navigate = useNavigate()
+  const { user } = useAuth()
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const detectorRef = useRef<any | null>(null)
   const rafRef = useRef<number | null>(null)
 
-  // Reference tracking
-  const refCanvasRef = useRef<HTMLCanvasElement | null>(null)
-  const [referencePoses, setReferencePoses] = useState<PosePoint[][]>([])
+  // Reference tracking - removed, backend handles reference pose extraction
 
   // Mutable buffers & flags
   const posesBuffer = useRef<PosePoint[][]>([])
@@ -75,99 +77,17 @@ export default function PoseTracker({
 
   console.log(score, error)
 
-  // Upper-body joints to capture (MoveNet names)
-  const UPPER_BODY_JOINTS = [
-    "nose",
-    "left_eye",
-    "right_eye",
-    "left_shoulder",
-    "right_shoulder",
-    "left_elbow",
-    "right_elbow",
-    "left_wrist",
-    "right_wrist",
-  ]
+  // Track all available points - no filtering
 
   const captureIntervalMs = Math.max(1, Math.round(1000 / captureFps))
   const lastCaptureTs = useRef<number>(0)
 
-  // Load Reference Pose JSON (auto-detect from video name)
-  useEffect(() => {
-    if (!referenceVideoUrl) return
-
-    const jsonUrl = referenceVideoUrl
-      .replace("/reference_videos/", "/reference_poses/")
-      .replace(".mp4", "_pose.json")
-
-    fetch(jsonUrl)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("[ReferencePose] Loaded", data.length, "frames from", jsonUrl)
-        setReferencePoses(data)
-      })
-      .catch((err) => console.warn("Failed to load reference pose JSON:", err))
-  }, [referenceVideoUrl])
-
-  // Draw reference skeleton frame
-  const drawReferencePoseFrame = (time: number) => {
-    if (!referencePoses.length || !refCanvasRef.current || !showTrackingPoints) {
-      if (refCanvasRef.current) {
-        const ctx = refCanvasRef.current.getContext("2d")!
-        ctx.clearRect(0, 0, 480, 360)
-      }
-      return
-    }
-    const ctx = refCanvasRef.current.getContext("2d")!
-    const fps = 15 // pose extraction rate
-    const frameIndex = Math.floor(time * fps)
-    if (frameIndex < 0 || frameIndex >= referencePoses.length) return
-
-    const frame = referencePoses[frameIndex]
-    ctx.clearRect(0, 0, 480, 360)
-
-    frame.forEach((kp) => {
-      if (kp.score > 0.3) {
-        ctx.beginPath()
-        ctx.arc(kp.x * 480, kp.y * 360, 5, 0, Math.PI * 2)
-        ctx.fillStyle = "rgba(45, 212, 191, 0.9)" // teal-ish
-        ctx.fill()
-      }
-    })
-
-    const byName = new Map(frame.map((k) => [k.name, k]))
-    const drawLine = (a: string, b: string) => {
-      const A = byName.get(a)
-      const B = byName.get(b)
-      if (A && B && A.score > 0.3 && B.score > 0.3) {
-        ctx.beginPath()
-        ctx.moveTo(A.x * 480, A.y * 360)
-        ctx.lineTo(B.x * 480, B.y * 360)
-        ctx.strokeStyle = "rgba(45, 212, 191, 0.6)"
-        ctx.lineWidth = 2
-        ctx.stroke()
-      }
-    }
-    drawLine("left_shoulder", "left_elbow")
-    drawLine("left_elbow", "left_wrist")
-    drawLine("right_shoulder", "right_elbow")
-    drawLine("right_elbow", "right_wrist")
-  }
-
-  // Sync reference skeleton with video playback
-  useEffect(() => {
-    const refVideo = document.getElementById("referenceVideo") as HTMLVideoElement | null
-    if (!refVideo || !referencePoses.length) return
-
-    const handleTimeUpdate = () => drawReferencePoseFrame(refVideo.currentTime)
-    refVideo.addEventListener("timeupdate", handleTimeUpdate)
-    return () => {
-      refVideo.removeEventListener("timeupdate", handleTimeUpdate)
-    }
-  }, [referencePoses, showTrackingPoints])
+  // Reference video pose extraction removed - backend handles this using pre-computed reference poses
 
   // Initialize detector + webcam
   useEffect(() => {
     let mounted = true
+    let stream: MediaStream | null = null
 
     async function setup() {
       try {
@@ -178,28 +98,73 @@ export default function PoseTracker({
           posedetection.SupportedModels.MoveNet,
           { modelType: posedetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
         )
+        if (!mounted) {
+          detector.dispose()
+          return
+        }
         detectorRef.current = detector
 
-        const video = videoRef.current!
-        const stream = await navigator.mediaDevices.getUserMedia({
+        const video = videoRef.current
+        if (!video || !mounted) return
+
+        // Get user media stream
+        stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "user" },
           audio: false,
         })
-        video.srcObject = stream
-        await video.play()
+        
+        if (!mounted) {
+          stream.getTracks().forEach((t) => t.stop())
+          return
+        }
 
-        video.addEventListener("loadedmetadata", () => {
-          if (canvasRef.current) {
-            canvasRef.current.width = video.videoWidth
-            canvasRef.current.height = video.videoHeight
+        // Pause video first to avoid interrupting play() promise
+        video.pause()
+        
+        // Set srcObject
+        video.srcObject = stream
+        
+        // Wait for video to be ready
+        await new Promise<void>((resolve) => {
+          const handleLoadedMetadata = () => {
+            video.removeEventListener("loadedmetadata", handleLoadedMetadata)
+            if (canvasRef.current) {
+              canvasRef.current.width = video.videoWidth
+              canvasRef.current.height = video.videoHeight
+            }
+            resolve()
+          }
+          video.addEventListener("loadedmetadata", handleLoadedMetadata)
+          // If metadata is already loaded
+          if (video.readyState >= 1) {
+            handleLoadedMetadata()
           }
         })
 
-        detectLoop()
-        if (mounted) setInitialized(true)
+        if (!mounted) return
+
+        // Play video with proper error handling
+        try {
+          const playPromise = video.play()
+          if (playPromise !== undefined) {
+            await playPromise
+          }
+        } catch (playError: any) {
+          // Ignore play() interruption errors - they're usually harmless
+          if (playError.name !== "AbortError" && playError.name !== "NotAllowedError") {
+            console.warn("Video play error:", playError)
+          }
+        }
+
+        if (mounted) {
+          detectLoop()
+          setInitialized(true)
+        }
       } catch (e: any) {
-        console.error("PoseTracker init error:", e)
-        setError(String(e.message || e))
+        if (mounted) {
+          console.error("PoseTracker init error:", e)
+          setError(String(e.message || e))
+        }
       }
     }
 
@@ -207,12 +172,44 @@ export default function PoseTracker({
 
     return () => {
       mounted = false
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-      if (detectorRef.current?.dispose) detectorRef.current.dispose()
-      if (videoRef.current?.srcObject) {
-        ;(videoRef.current.srcObject as MediaStream)
-          .getTracks()
-          .forEach((t) => t.stop())
+      
+      // Cancel animation frame
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+      
+      // Dispose detector
+      if (detectorRef.current?.dispose) {
+        detectorRef.current.dispose()
+        detectorRef.current = null
+      }
+      
+      // Clean up video stream
+      const video = videoRef.current
+      if (video) {
+        // Pause video first
+        try {
+          video.pause()
+        } catch {
+          // Ignore pause errors
+        }
+        
+        // Clear srcObject
+        if (video.srcObject) {
+          const mediaStream = video.srcObject as MediaStream
+          mediaStream.getTracks().forEach((track) => {
+            track.stop()
+          })
+          video.srcObject = null
+        }
+      }
+      
+      // Also clean up stream reference
+      if (stream) {
+        stream.getTracks().forEach((track) => {
+          track.stop()
+        })
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -238,8 +235,9 @@ export default function PoseTracker({
 
       if (poses.length > 0) {
         const rawKps = poses[0].keypoints || []
+        // Capture all detected points (only those with score > threshold)
         const filtered: PosePoint[] = rawKps
-          .filter((kp: any) => UPPER_BODY_JOINTS.includes(kp.name))
+          .filter((kp: any) => (kp.score ?? 0) > 0.2) // Only track visible points
           .map((kp: any) => ({
             x: kp.x / (video.videoWidth || 1),
             y: kp.y / (video.videoHeight || 1),
@@ -286,6 +284,7 @@ export default function PoseTracker({
       }
     }
 
+    // Draw skeleton connections for visualization
     const byName = new Map(keypoints.map((k) => [k.name, k]))
     const drawLineIf = (a: string, b: string) => {
       const A = byName.get(a)
@@ -297,33 +296,53 @@ export default function PoseTracker({
         ctx.stroke()
       }
     }
+    // Draw common skeleton connections
+    drawLineIf("left_shoulder", "right_shoulder")
     drawLineIf("left_shoulder", "left_elbow")
     drawLineIf("left_elbow", "left_wrist")
     drawLineIf("right_shoulder", "right_elbow")
     drawLineIf("right_elbow", "right_wrist")
+    drawLineIf("left_shoulder", "left_hip")
+    drawLineIf("right_shoulder", "right_hip")
+    drawLineIf("left_hip", "right_hip")
+    drawLineIf("left_hip", "left_knee")
+    drawLineIf("left_knee", "left_ankle")
+    drawLineIf("right_hip", "right_knee")
+    drawLineIf("right_knee", "right_ankle")
   }
 
   const startRecording = () => {
     posesBuffer.current = []
-    recordingRef.current = true
     setRecordStartTs(Date.now())
     setIsRecording(true)
     setScore(null)
     setError(null)
     lastCaptureTs.current = 0
-    console.log("🎥 Started recording poses...")
+    console.log("🎥 Started recording user poses...")
 
-    // Play reference video from start
+    // Play reference video from start (for visual reference only, no pose tracking)
     const refVideo = refVideoRef.current
     if (refVideo) {
       refVideo.currentTime = 0
       refVideo.muted = true
-      refVideo
-        .play()
-        .then(() => setIsRefPlaying(true))
-        .catch((err) => {
-          console.warn("⚠️ Autoplay blocked:", err)
+      refVideo.loop = false // Disable loop during recording so we can detect when it ends
+      
+      refVideo.play()
+        .then(() => {
+          setIsRefPlaying(true)
+          recordingRef.current = true
+          console.log("✅ Recording active - backend will use pre-computed reference poses")
         })
+        .catch((err) => {
+          console.warn("⚠️ Reference video autoplay blocked:", err)
+          // Still allow recording even if video doesn't autoplay
+          recordingRef.current = true
+          setIsRefPlaying(false)
+        })
+    } else {
+      // Still allow recording even without reference video
+      recordingRef.current = true
+      console.log("⚠️ Reference video not found, but recording user poses anyway")
     }
   }
 
@@ -331,12 +350,13 @@ export default function PoseTracker({
     recordingRef.current = false
     setIsRecording(false)
     const framesCaptured = posesBuffer.current.length
-    console.log("🧍 Frames captured:", framesCaptured)
+    console.log("🧍 User frames captured:", framesCaptured)
 
     const refVideo = refVideoRef.current
     if (refVideo) {
       refVideo.pause()
       setIsRefPlaying(false)
+      refVideo.loop = true // Re-enable loop after recording stops
     }
 
     if (framesCaptured === 0) {
@@ -344,21 +364,40 @@ export default function PoseTracker({
       return
     }
 
+    // Backend will load reference poses from pre-computed JSON files
+    // Send reference video URL so backend can find the correct exercise and reference pose
     const payload = {
       task_id: taskId,
+      reference_video_url: referenceVideoUrl, // Send video URL to find matching exercise
+      user_id: user?.id,
       user_pose_sequence: posesBuffer.current,
     }
 
     try {
+      // Get auth token from localStorage
+      const token = localStorage.getItem("access_token")
+      const headers: HeadersInit = { "Content-Type": "application/json" }
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+
       const res = await fetch(backendUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       })
 
       const data = await res.json()
-      if (res.ok) setScore(typeof data.score === "number" ? data.score : null)
-      else setError(data.error || JSON.stringify(data))
+      if (res.ok) {
+        const newScore = typeof data.score === "number" ? data.score : null
+        setScore(newScore)
+        // Call callback if score was successfully received
+        if (newScore !== null && onExerciseComplete) {
+          onExerciseComplete()
+        }
+      } else {
+        setError(data.error || JSON.stringify(data))
+      }
     } catch (e: any) {
       setError(String(e.message || e))
       console.error("send error:", e)
@@ -383,7 +422,7 @@ export default function PoseTracker({
   const prettyTaskId = taskId.replace(/-/g, " ")
 
   return (
-    <div className="flex min-h-screen w-full overflow-hidden bg-slate-50 font-sans">
+    <div className="flex min-h-screen w-full overflow-y-hidden bg-slate-50 font-sans">
       {/* LEFT SIDEBAR */}
       <div className="relative hidden w-1/3 flex-col border-r border-slate-800 bg-[#0f172a] text-slate-300 lg:flex">
         {/* Decorative background */}
@@ -396,7 +435,7 @@ export default function PoseTracker({
           {/* Header */}
           <div className="mb-8">
             <button 
-              onClick={() => navigate("/daily-tasks")}
+              onClick={onClose}
               className="group mb-6 flex cursor-pointer items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
             >
               <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
@@ -516,9 +555,24 @@ export default function PoseTracker({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 lg:p-10">
-          <div className="mx-auto flex h-full max-w-6xl flex-col gap-6">
+          <div className="mx-auto flex h-full justify-center max-w-6xl  flex-col gap-6">
+            <div className="flex flex-col  justify-center gap-5">
+            <h1 className="text-5xl font-bold text-slate-900">Follow the instructions and start the exercise to get your score</h1>
+            <p className="text-slate-600 text-xl">Complete all reps with proper form to earn points and build your streak</p>
+            <div className="grid grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <p className="text-xs text-slate-600 font-medium uppercase tracking-wide mb-1">Duration</p>
+                  <p className="text-2xl font-bold text-slate-900">10 seconds</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <p className="text-xs text-slate-600 font-medium uppercase tracking-wide mb-1">Difficulty</p>
+                  <p className="text-2xl font-bold text-teal-600">Intermediate</p>
+                </div>
+
+              </div>
+            </div>
             {/* GRID: Reference guide + AI camera */}
-            <div className="grid min-h-[500px] gap-6 lg:grid-cols-2">
+            <div className="grid min-h-[500px] gap-6 b lg:grid-cols-2">
               {/* Reference Video Card */}
               <div className="flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-100 p-4">
@@ -545,15 +599,25 @@ export default function PoseTracker({
                         className="h-full w-full object-cover opacity-85"
                         onPlay={() => setIsRefPlaying(true)}
                         onPause={() => setIsRefPlaying(false)}
+                        onEnded={() => {
+                          // Auto-stop recording when reference video ends
+                          if (isRecording && recordingRef.current) {
+                            console.log("📹 Reference video ended, auto-stopping recording...")
+                            stopRecording()
+                          }
+                        }}
+                        onError={(e) => {
+                          console.error("Reference video error:", e)
+                          const video = e.currentTarget
+                          if (video.error) {
+                            console.error("Video error code:", video.error.code, "message:", video.error.message)
+                            setError(`Reference video failed to load: ${video.error.message}. Please check the video URL.`)
+                          }
+                        }}
+                        onLoadedData={() => {
+                          console.log("✅ Reference video loaded successfully")
+                        }}
                       />
-                      {showTrackingPoints && (
-                        <canvas
-                          ref={refCanvasRef}
-                          width={480}
-                          height={360}
-                          className="pointer-events-none absolute inset-0 h-full w-full"
-                        />
-                      )}
                       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                         <button
                           onClick={() => {
@@ -680,17 +744,32 @@ export default function PoseTracker({
                         <span className="rounded-full bg-slate-800 px-3 py-1 font-mono text-[11px] uppercase tracking-wide text-slate-300">
                           {isRecording ? `Recording ${getElapsed()}` : "Idle"}
                         </span>
-                        {score !== null && !error && (
-                          <span className="text-sm font-semibold text-emerald-400">
-                            Score: {(score * 100).toFixed(0)}%
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Score Display - Prominent */}
+                  {score !== null && !error && (
+                    <div className="mt-4 flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-teal-500/20 to-emerald-500/20 border border-teal-500/30 px-6 py-4">
+                      <div className="text-center">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Exercise Accuracy</p>
+                        <p className="mt-1 text-4xl font-bold text-emerald-400">
+                          {(score * 100).toFixed(0)}%
+                        </p>
+                        <p className="mt-2 text-xs text-slate-300">
+                          {score >= 0.8 ? "Excellent form! 🎉" : score >= 0.6 ? "Good job! Keep practicing 💪" : "Keep practicing to improve 📈"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {error && (
+                    <div className="mt-4 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3">
+                      <p className="text-sm text-red-400">{error}</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              {/* end AI card */}
             </div>
           </div>
         </div>
@@ -698,3 +777,4 @@ export default function PoseTracker({
     </div>
   )
 }
+

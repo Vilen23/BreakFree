@@ -12,7 +12,7 @@ const ADDICTIONS = [
   { id: "gaming", label: "Gaming", icon: "🎮" },
   { id: "social", label: "Social Media", icon: "📲" },
   { id: "alcohol", label: "Alcohol", icon: "🍷" },
-  { id: "nicotine", label: "Nicotine", icon: "🚬" },
+  { id: "smoking", label: "Smoking", icon: "🚬" },
   { id: "other", label: "Other", icon: "✨" },
 ]
 

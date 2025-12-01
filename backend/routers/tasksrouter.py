@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
 from utils import database, models, auth
 from utils.gemini import generate_daily_tasks
 
@@ -100,3 +102,158 @@ async def get_today_tasks(
     )
     print("[TasksRouter] created tasks titles:", [t.title for t in plan.tasks])
     return plan
+
+
+class TaskUpdateRequest(BaseModel):
+    task_id: str
+    completed: bool
+    date: Optional[str] = None  # If not provided, uses today's date
+
+
+class TaskAccuracyUpdateRequest(BaseModel):
+    task_id: str
+    accuracy: float
+    date: Optional[str] = None  # If not provided, uses today's date
+
+
+class MarkDayCompleteRequest(BaseModel):
+    date: Optional[str] = None  # If not provided, uses today's date
+
+
+@router.patch("/task/complete")
+async def update_task_completion(
+    update_data: TaskUpdateRequest,
+    current_user: database.FirestoreUser = Depends(auth.get_current_active_user),
+):
+    """
+    Mark a task as complete or incomplete
+    """
+    date = update_data.date or datetime.utcnow().strftime("%Y-%m-%d")
+
+    # Get the daily tasks for this date
+    daily_tasks = database.get_daily_tasks_by_date(current_user.id, date)
+    if not daily_tasks:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No daily tasks found for date {date}",
+        )
+
+    # Update the task completion status
+    tasks = daily_tasks.tasks if daily_tasks.tasks else []
+    updated = False
+
+    for i, task in enumerate(tasks):
+        task_id = task.get("id") if isinstance(task, dict) else getattr(task, "id", "")
+        if str(task_id) == str(update_data.task_id):
+            if isinstance(task, dict):
+                tasks[i]["completed"] = update_data.completed
+            else:
+                # Convert to dict if needed
+                task_dict = {
+                    "id": getattr(task, "id", ""),
+                    "title": getattr(task, "title", ""),
+                    "description": getattr(task, "description", ""),
+                    "time": getattr(task, "time", ""),
+                    "completed": update_data.completed,
+                    "video_url": getattr(task, "video_url", None),
+                    "exercise_type": getattr(task, "exercise_type", None),
+                    "difficulty": getattr(task, "difficulty", None),
+                    "image": getattr(task, "image", None),
+                    "steps": getattr(task, "steps", None),
+                    "accuracy": getattr(task, "accuracy", None),
+                }
+                tasks[i] = task_dict
+            updated = True
+            break
+
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task {update_data.task_id} not found",
+        )
+
+    # Save the updated tasks
+    database.update_daily_tasks(daily_tasks.id, {"tasks": tasks})
+
+    return {
+        "success": True,
+        "message": f"Task marked as {'complete' if update_data.completed else 'incomplete'}",
+    }
+
+
+@router.patch("/task/accuracy")
+async def update_task_accuracy(
+    update_data: TaskAccuracyUpdateRequest,
+    current_user: database.FirestoreUser = Depends(auth.get_current_active_user),
+):
+    """
+    Update the accuracy score for a task (alternative to pose comparison endpoint)
+    """
+    date = update_data.date or datetime.utcnow().strftime("%Y-%m-%d")
+
+    success = database.save_exercise_score(
+        current_user.id, update_data.task_id, date, update_data.accuracy
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Failed to update accuracy for task {update_data.task_id}",
+        )
+
+    return {
+        "success": True,
+        "message": f"Accuracy score updated to {update_data.accuracy:.3f}",
+    }
+
+
+@router.post("/day/complete")
+async def mark_day_complete(
+    request: MarkDayCompleteRequest,
+    current_user: database.FirestoreUser = Depends(auth.get_current_active_user),
+):
+    """
+    Mark all tasks for a day as complete
+    """
+    target_date = request.date or datetime.utcnow().strftime("%Y-%m-%d")
+
+    # Get the daily tasks for this date
+    daily_tasks = database.get_daily_tasks_by_date(current_user.id, target_date)
+    if not daily_tasks:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No daily tasks found for date {target_date}",
+        )
+
+    # Mark all tasks as complete
+    tasks = daily_tasks.tasks if daily_tasks.tasks else []
+    updated_tasks = []
+
+    for task in tasks:
+        if isinstance(task, dict):
+            task["completed"] = True
+            updated_tasks.append(task)
+        else:
+            task_dict = {
+                "id": getattr(task, "id", ""),
+                "title": getattr(task, "title", ""),
+                "description": getattr(task, "description", ""),
+                "time": getattr(task, "time", ""),
+                "completed": True,
+                "video_url": getattr(task, "video_url", None),
+                "exercise_type": getattr(task, "exercise_type", None),
+                "difficulty": getattr(task, "difficulty", None),
+                "image": getattr(task, "image", None),
+                "steps": getattr(task, "steps", None),
+                "accuracy": getattr(task, "accuracy", None),
+            }
+            updated_tasks.append(task_dict)
+
+    # Save the updated tasks
+    database.update_daily_tasks(daily_tasks.id, {"tasks": updated_tasks})
+
+    return {
+        "success": True,
+        "message": f"All tasks for {target_date} marked as complete",
+        "tasks_completed": len(updated_tasks),
+    }

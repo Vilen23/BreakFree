@@ -23,6 +23,7 @@ JOURNALS_COLLECTION = "journals"
 JOURNAL_MESSAGES_COLLECTION = "journal_messages"
 ONBOARDING_COLLECTION = "onboarding_responses"
 DAILY_TASKS_COLLECTION = "daily_tasks"
+EXERCISE_SCORES_COLLECTION = "exercise_scores"
 
 
 class FirestoreUser:
@@ -400,3 +401,65 @@ def get_recent_daily_tasks(user_id: str, days: int = 2) -> List[FirestoreDailyTa
             recent_tasks.append(task)
 
     return recent_tasks
+
+
+def save_exercise_score(user_id: str, task_id: str, date: str, score: float) -> bool:
+    """
+    Save or update exercise score for a user, task, and date.
+    If score already exists, it will be updated.
+    """
+    try:
+        # Find the daily tasks for this date
+        daily_tasks = get_daily_tasks_by_date(user_id, date)
+        if not daily_tasks:
+            print(
+                f"[ExerciseScore] No daily tasks found for user={user_id}, date={date}"
+            )
+            return False
+
+        # Update the task with the score
+        tasks = daily_tasks.tasks if daily_tasks.tasks else []
+        updated = False
+        for i, task in enumerate(tasks):
+            if isinstance(task, dict):
+                if str(task.get("id")) == str(task_id):
+                    tasks[i]["accuracy"] = score
+                    updated = True
+                    break
+            elif hasattr(task, "id") and str(getattr(task, "id", "")) == str(task_id):
+                if isinstance(tasks[i], dict):
+                    tasks[i]["accuracy"] = score
+                else:
+                    # Convert to dict if needed
+                    task_dict = {
+                        "id": getattr(task, "id", ""),
+                        "title": getattr(task, "title", ""),
+                        "description": getattr(task, "description", ""),
+                        "time": getattr(task, "time", ""),
+                        "completed": getattr(task, "completed", False),
+                        "video_url": getattr(task, "video_url", None),
+                        "exercise_type": getattr(task, "exercise_type", None),
+                        "difficulty": getattr(task, "difficulty", None),
+                        "image": getattr(task, "image", None),
+                        "steps": getattr(task, "steps", None),
+                        "accuracy": score,
+                    }
+                    tasks[i] = task_dict
+                updated = True
+                break
+
+        if updated:
+            update_daily_tasks(daily_tasks.id, {"tasks": tasks})
+            print(
+                f"[ExerciseScore] Updated score for user={user_id}, task={task_id}, date={date}, score={score:.3f}"
+            )
+            return True
+        else:
+            print(
+                f"[ExerciseScore] Task {task_id} not found in daily tasks for user={user_id}, date={date}"
+            )
+            return False
+
+    except Exception as e:
+        print(f"[ExerciseScore] Error saving score: {e}")
+        return False

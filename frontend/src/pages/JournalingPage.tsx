@@ -15,6 +15,7 @@ import {
   Sparkles
 } from "lucide-react"
 import api from "../lib/api" // your API helper (axios instance)
+import { useAuth } from "../context/AuthContext"
 import { cn } from "@/lib/utils"
 
 // Mock entries fallback (used if API doesn't return a list)
@@ -51,6 +52,73 @@ const FALLBACK_ENTRIES = [
 
 type Entry = typeof FALLBACK_ENTRIES[number]
 
+// User Profile Component
+function UserProfile() {
+  const { user } = useAuth()
+  const [userInfo, setUserInfo] = useState<{
+    firstname: string
+    lastname: string
+    email: string
+  } | null>(null)
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const { data } = await api.get("/auth/me")
+        setUserInfo({
+          firstname: data.firstname || "",
+          lastname: data.lastname || "",
+          email: data.email || "",
+        })
+      } catch (error) {
+        console.error("Failed to fetch user info:", error)
+        // Fallback to user from context if available
+        if (user) {
+          setUserInfo({
+            firstname: user.firstname || "",
+            lastname: user.lastname || "",
+            email: user.email || "",
+          })
+        }
+      }
+    }
+
+    fetchUserInfo()
+  }, [user])
+
+  const getInitials = () => {
+    if (userInfo) {
+      const first = userInfo.firstname?.charAt(0)?.toUpperCase() || ""
+      const last = userInfo.lastname?.charAt(0)?.toUpperCase() || ""
+      return first + last || "U"
+    }
+    return "U"
+  }
+
+  const getDisplayName = () => {
+    if (userInfo) {
+      const name = `${userInfo.firstname || ""} ${userInfo.lastname || ""}`.trim()
+      return name || userInfo.email?.split("@")[0] || "User"
+    }
+    return "User"
+  }
+
+  return (
+    <div className="relative z-10 p-4 border-t border-white/5 bg-[#0f172a]">
+      <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
+        <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-teal-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+          {getInitials()}
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-medium text-white">{getDisplayName()}</div>
+          <div className="text-xs text-slate-500">Free Plan</div>
+        </div>
+        <MoreVertical className="w-4 h-4 text-slate-500" />
+      </div>
+    </div>
+  )
+}
+
 export default function JournalingPage() {
   // --- UI & app state (merged from both versions) ---
   const [entries, setEntries] = useState<Entry[]>([])
@@ -66,19 +134,6 @@ export default function JournalingPage() {
   const [loadingMessages, setLoadingMessages] = useState<boolean>(false)
   const [conversationUnlocked, setConversationUnlocked] = useState<boolean>(false)
   const [journalEntry, setJournalEntry] = useState<{ conversation_unlocked?: boolean; ai_response?: string | null; content?: string } | null>(null)
-  // conversation mock fallback to show UI when nothing loaded
-  const [conversationStream, setConversationStream] = useState([
-    {
-      role: "user",
-      text: "Ah today was a tiring day",
-      time: "8:30 PM"
-    },
-    {
-      role: "companion",
-      text: "It sounds like you had a long day! With your goal of reducing social media to spend more time with loved ones, it's understandable that you might feel drained. What sensations are you experiencing in your body right now?",
-      time: "8:31 PM"
-    }
-  ])
 
   // textarea input for new messages in new layout (keeps same as 'text')
   const [input, setInput] = useState("")
@@ -386,18 +441,7 @@ export default function JournalingPage() {
         </div>
 
         {/* User Profile */}
-        <div className="relative z-10 p-4 border-t border-white/5 bg-[#0f172a]">
-          <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-teal-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
-              JD
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-medium text-white">Jane Doe</div>
-              <div className="text-xs text-slate-500">Free Plan</div>
-            </div>
-            <MoreVertical className="w-4 h-4 text-slate-500" />
-          </div>
-        </div>
+        <UserProfile />
       </div>
 
       {/* Right Panel - Main Content */}
@@ -512,7 +556,7 @@ export default function JournalingPage() {
                   <p className="text-gray-600 text-sm">Need further assistance?</p>
                   <button
                     onClick={handleUnlockConversation}
-                    className="px-6 py-2 bg-black text-white rounded-full"
+                    className="px-6 py-2 bg-black cursor-pointer text-white rounded-full"
                   >
                     Unlock Conversation
                   </button>
@@ -559,29 +603,6 @@ export default function JournalingPage() {
               </div>
             )}
 
-            {/* Fallback mock conversation when no entry selected */}
-            {!selectedDate && !isLoadingContent && (
-              <div className="space-y-6 max-w-3xl mx-auto">
-                {conversationStream.map((msg, idx) => (
-                  <div key={idx} className={cn(
-                    "flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-4 duration-300",
-                    msg.role === "user" ? "items-end" : "items-start"
-                  )}>
-                    <div className={cn(
-                      "max-w-[85%] rounded-2xl p-5 text-base leading-relaxed shadow-sm border",
-                      msg.role === "user"
-                        ? "bg-white border-slate-100 text-slate-800 rounded-tr-sm"
-                        : "bg-teal-50/60 border-teal-100 text-slate-800 rounded-tl-sm"
-                    )}>
-                      <p>{msg.text}</p>
-                    </div>
-                    <span className="text-xs text-slate-400 px-2">
-                      {msg.role === "user" ? "You" : "Companion AI"} • {msg.time}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 
