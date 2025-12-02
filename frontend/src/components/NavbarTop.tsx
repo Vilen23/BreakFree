@@ -10,6 +10,25 @@ export default function NavbarTop() {
     signOut()
     navigate('/')
   }
+
+  const handleNavClick = (anchor: string) => {
+    if (window.location.pathname !== '/') {
+      // Navigate to home page with hash
+      navigate(`/#${anchor}`)
+    } else {
+      // Already on home page, update hash and scroll
+      window.location.hash = anchor
+      const element = document.getElementById(anchor)
+      if (element) {
+        const elementPosition = element.getBoundingClientRect().top
+        const offsetPosition = elementPosition + window.pageYOffset - 80 // 8vh navbar offset
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        })
+      }
+    }
+  }
   return (
     <nav className="bg-[#171717] w-full h-[8vh] px-6 py-4 flex items-center justify-between fixed top-0 left-0 z-[60] transition-opacity duration-300">
       <div>
@@ -26,22 +45,22 @@ export default function NavbarTop() {
             </Link>
           </li>
           <li>
-            <a href="#about" className="relative group">
+            <button onClick={() => handleNavClick('about')} className="relative group cursor-pointer">
               About
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-            </a>
+            </button>
           </li>
           <li>
-            <a href="#services" className="relative group">
+            <button onClick={() => handleNavClick('services')} className="relative group cursor-pointer">
               Services
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-            </a>
+            </button>
           </li>
           <li>
-            <a href="#contact" className="relative group">
+            <button onClick={() => handleNavClick('contact')} className="relative group cursor-pointer">
               Contact
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
-            </a>
+            </button>
           </li>
           {user ? (
             <>
