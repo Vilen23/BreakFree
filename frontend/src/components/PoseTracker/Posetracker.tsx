@@ -37,6 +37,8 @@ type PoseTrackerProps = {
   taskSteps: string[]
   showTrackingPoints?: boolean
   onExerciseComplete?: () => void // Callback when exercise is completed with score
+  exerciseType?: string | null // Exercise type from backend (e.g., "physical")
+  difficulty?: string | null // Difficulty level from backend (e.g., "easy", "medium", "hard")
 }
 
 export default function PoseTracker({
@@ -50,6 +52,8 @@ export default function PoseTracker({
   taskSteps = [],
   showTrackingPoints = true,
   onExerciseComplete,
+  exerciseType = null,
+  difficulty = null,
 }: PoseTrackerProps) {
   const { user } = useAuth()
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -451,12 +455,16 @@ export default function PoseTracker({
               </div>
             </div>
             <div className="mt-3 flex gap-2">
-              <span className="rounded-full border border-teal-500/20 bg-teal-500/10 px-2.5 py-0.5 text-xs font-medium text-teal-400">
-                Strength
-              </span>
-              <span className="rounded-full border border-slate-700 bg-slate-700/50 px-2.5 py-0.5 text-xs font-medium text-slate-300">
-                Intermediate
-              </span>
+              {exerciseType && (
+                <span className="rounded-full border border-teal-500/20 bg-teal-500/10 px-2.5 py-0.5 text-xs font-medium text-teal-400 capitalize">
+                  {exerciseType === "physical" ? "Physical" : exerciseType}
+                </span>
+              )}
+              {difficulty && (
+                <span className="rounded-full border border-slate-700 bg-slate-700/50 px-2.5 py-0.5 text-xs font-medium text-slate-300 capitalize">
+                  {difficulty}
+                </span>
+              )}
             </div>
           </div>
 
@@ -566,7 +574,9 @@ export default function PoseTracker({
                 </div>
                 <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <p className="text-xs text-slate-600 font-medium uppercase tracking-wide mb-1">Difficulty</p>
-                  <p className="text-2xl font-bold text-teal-600">Intermediate</p>
+                  <p className="text-2xl font-bold text-teal-600 capitalize">
+                    {difficulty || "N/A"}
+                  </p>
                 </div>
 
               </div>

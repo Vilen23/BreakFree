@@ -20,7 +20,7 @@ export default function ExerciseMonitorModal({
   onExerciseComplete,
 }: ExerciseMonitorModalProps) {
   if (!isOpen) return null;
-
+  console.log(task.difficulty)
   return (
     <div className="fixed inset-0 z-[55] overflow-y-hidden bg-black/60 backdrop-blur-sm overflow-auto" style={{ top: '5vh', height: 'calc(100vh - 8vh)' }}>
       <div className="relative h-full bg-gray-50">
@@ -50,6 +50,8 @@ export default function ExerciseMonitorModal({
             taskSteps={steps}
             showTrackingPoints={true}
             onExerciseComplete={onExerciseComplete}
+            exerciseType={task.exercise_type || null}
+            difficulty={task.difficulty || null}
           />
         </div>
       </div>

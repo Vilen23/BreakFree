@@ -49,11 +49,15 @@ async def login(login_data: models.UserLogin):
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    # Create token without expiration (pass None to expires_delta)
     access_token = auth.create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
+        data={"sub": user.email}, expires_delta=None
     )
-    return {"access_token": access_token, "token_type": "bearer", "information_stores": user.information_stores}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "information_stores": user.information_stores,
+    }
 
 
 @router.get("/me", response_model=models.User)
